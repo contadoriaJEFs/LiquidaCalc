@@ -80,41 +80,57 @@ async function checkSession() {
   }
 }
 
-// --- Login ---
+// ======================================================
+// LOGIN
+// ======================================================
+
 async function handleLogin(e) {
-  e.preventDefault();
-  hideError();
-  setLoading(true);
-
-  const email = emailInput.value.trim();
-  const password = passwordInput.value.trim();
-
-  if (!email || !password) {
-    showError('Preencha e-mail e senha.');
-    setLoading(false);
-    return;
-  }
-
-  try {
-    const { data, error } = await CONTADJUS.supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) throw error;
-
-    log('Login bem-sucedido:', data.user.email);
-    hideOverlay();
-    setLoading(false);
-    // Limpa o formulário
-    loginForm.reset();
-  } catch (err) {
-    logError('Falha no login:', err.message);
-    showError(err.message || 'Não foi possível realizar o login. Procure o administrador do sistema');
-    setLoading(false);
-  }
+    e.preventDefault();
+    hideError();
+    setLoading(true);
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+    if (!email || !password) {
+        showError('Preencha o e-mail e a senha.');
+        setLoading(false);
+        return;
+    }
+    try {
+        const { data, error } = await CONTADJUS.supabase.auth.signInWithPassword({
+            email,
+            password
+        });
+        if (error) throw error;
+        log('Login bem-sucedido:', data?.user?.email);
+        hideOverlay();
+        loginForm.reset();
+    } catch (err) {
+        logError('Falha no login:', err);
+        let mensagemErro = 'Não foi possível realizar o login. Procure o administrador do sistema.';
+        switch (err?.message) {
+            case 'Invalid login credentials':
+                mensagemErro = 'E-mail ou senha incorretos.';
+                break;
+            case 'Email not confirmed':
+                mensagemErro = 'Seu e-mail ainda não foi confirmado.';
+                break;
+            case 'Too many requests':
+                mensagemErro = 'Muitas tentativas de acesso. Aguarde alguns minutos e tente novamente.';
+                break;
+            case 'Network request failed':
+                mensagemErro = 'Não foi possível conectar ao servidor. Verifique sua conexão com a Internet.';
+                break;
+            case 'Failed to fetch':
+                mensagemErro = 'Não foi possível conectar ao servidor. Verifique sua conexão com a Internet.';
+                break;
+            default:
+                logError('Erro inesperado:', err);
+        }
+        showError(mensagemErro);
+    } finally {
+        setLoading(false);
+    }
 }
-
 // --- Logout ---
 async function handleLogout() {
   try {
