@@ -65,7 +65,7 @@ function setLoading(loading) {
 // --- Verificação de sessão ---
 async function checkSession() {
   try {
-    const { data: { session }, error } = await CONTADJUS.supabase.auth.getSession();
+    const { data: { session }, error } = await supabaseClient.auth.getSession();
     if (error) throw error;
     if (session) {
       log('Sessão ativa:', session.user.email);
@@ -80,61 +80,45 @@ async function checkSession() {
   }
 }
 
-// ======================================================
-// LOGIN
-// ======================================================
-
+// --- Login ---
 async function handleLogin(e) {
-    e.preventDefault();
-    hideError();
-    setLoading(true);
-    const email = emailInput.value.trim();
-    const password = passwordInput.value.trim();
-    if (!email || !password) {
-        showError('Preencha o e-mail e a senha.');
-        setLoading(false);
-        return;
-    }
-    try {
-        const { data, error } = await CONTADJUS.supabase.auth.signInWithPassword({
-            email,
-            password
-        });
-        if (error) throw error;
-        log('Login bem-sucedido:', data?.user?.email);
-        hideOverlay();
-        loginForm.reset();
-    } catch (err) {
-        logError('Falha no login:', err);
-        let mensagemErro = 'Não foi possível realizar o login. Procure o administrador do sistema.';
-        switch (err?.message) {
-            case 'Invalid login credentials':
-                mensagemErro = 'E-mail ou senha incorretos.';
-                break;
-            case 'Email not confirmed':
-                mensagemErro = 'Seu e-mail ainda não foi confirmado.';
-                break;
-            case 'Too many requests':
-                mensagemErro = 'Muitas tentativas de acesso. Aguarde alguns minutos e tente novamente.';
-                break;
-            case 'Network request failed':
-                mensagemErro = 'Não foi possível conectar ao servidor. Verifique sua conexão com a Internet.';
-                break;
-            case 'Failed to fetch':
-                mensagemErro = 'Não foi possível conectar ao servidor. Verifique sua conexão com a Internet.';
-                break;
-            default:
-                logError('Erro inesperado:', err);
-        }
-        showError(mensagemErro);
-    } finally {
-        setLoading(false);
-    }
+  e.preventDefault();
+  hideError();
+  setLoading(true);
+
+  const email = emailInput.value.trim();
+  const password = passwordInput.value.trim();
+
+  if (!email || !password) {
+    showError('Preencha e-mail e senha.');
+    setLoading(false);
+    return;
+  }
+
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) throw error;
+
+    log('Login bem-sucedido:', data.user.email);
+    hideOverlay();
+    setLoading(false);
+    // Limpa o formulário
+    loginForm.reset();
+  } catch (err) {
+    logError('Falha no login:', err.message);
+    showError(err.message || 'Erro ao autenticar. Verifique suas credenciais.');
+    setLoading(false);
+  }
 }
+
 // --- Logout ---
 async function handleLogout() {
   try {
-    const { error } = await CONTADJUS.supabase.auth.signOut();
+    const { error } = await supabaseClient.auth.signOut();
     if (error) throw error;
     log('Logout efetuado.');
     showOverlay();
@@ -157,7 +141,7 @@ async function handleForgotPassword(e) {
   }
 
   try {
-    const { error } = await CONTADJUS.supabase.auth.resetPasswordForEmail(email, {
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.origin + window.location.pathname,
     });
     if (error) throw error;
@@ -187,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
   forgotLink.addEventListener('click', handleForgotPassword);
 
   // Escuta mudanças de autenticação (ex: expiração de sessão)
-  CONTADJUS.supabase.auth.onAuthStateChange((event, session) => {
+  supabaseClient.auth.onAuthStateChange((event, session) => {
     log('Evento de auth:', event, session?.user?.email);
 
     if (event === 'SIGNED_IN' && session) {
