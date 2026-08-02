@@ -1,6 +1,6 @@
-// ============================================
-// Auth Controller - ContadJus
-// ============================================
+// ======================================================
+// CONFIGURAÇÕES
+// ======================================================
 
 // Modo de desenvolvimento (logs ativados)
 const DEV_MODE = true;
@@ -17,7 +17,10 @@ const btnLoader = document.getElementById('authBtnLoader');
 const forgotLink = document.getElementById('authForgotLink');
 const logoutBtn = document.getElementById('authLogoutBtn');
 
-// --- Utilitários de log (DEV_MODE) ---
+// ======================================================
+// UTILITÁRIOS
+// ======================================================
+
 function log(...args) {
   if (DEV_MODE) console.log('[AUTH]', ...args);
 }
@@ -26,7 +29,10 @@ function logError(...args) {
   if (DEV_MODE) console.error('[AUTH]', ...args);
 }
 
-// --- Controle do overlay ---
+// ======================================================
+// OVERLAY
+// ======================================================
+
 function showOverlay() {
   overlay.classList.remove('auth-hidden');
   overlay.classList.add('auth-visible');
@@ -39,7 +45,10 @@ function hideOverlay() {
   logoutBtn.classList.add('visible');
 }
 
-// --- Exibir mensagem de erro ---
+// ======================================================
+// MENSAGENS
+// ======================================================
+
 function showError(msg) {
   errorDiv.textContent = msg;
   errorDiv.classList.add('show');
@@ -49,7 +58,10 @@ function hideError() {
   errorDiv.classList.remove('show');
 }
 
-// --- Estado de loading do botão ---
+// ======================================================
+// LOADING
+// ======================================================
+
 function setLoading(loading) {
   if (loading) {
     loginBtn.disabled = true;
@@ -62,7 +74,10 @@ function setLoading(loading) {
   }
 }
 
-// --- Verificação de sessão ---
+// ======================================================
+// SESSÃO
+// ======================================================
+
 async function checkSession() {
   try {
     const { data: { session }, error } = await CONTADJUS.supabase.auth.getSession();
@@ -80,22 +95,24 @@ async function checkSession() {
   }
 }
 
-// --- Login ---
+// ======================================================
+// LOGIN
+// ======================================================
+
 async function handleLogin(e) {
   e.preventDefault();
   hideError();
   setLoading(true);
 
-  const email = emailInput.value.trim();
-  const password = passwordInput.value.trim();
-
-  if (!email || !password) {
-    showError('Preencha e-mail e senha.');
-    setLoading(false);
-    return;
-  }
-
   try {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    if (!email || !password) {
+      showError('Preencha e-mail e senha.');
+      return;
+    }
+
     const { data, error } = await CONTADJUS.supabase.auth.signInWithPassword({
       email,
       password,
@@ -103,19 +120,35 @@ async function handleLogin(e) {
 
     if (error) throw error;
 
-    log('Login bem-sucedido:', data.user.email);
+    log('Login bem-sucedido:', data?.user?.email);
     hideOverlay();
-    setLoading(false);
     // Limpa o formulário
     loginForm.reset();
   } catch (err) {
     logError('Falha no login:', err.message);
-    showError(err.message || 'Erro ao autenticar. Verifique suas credenciais.');
+    
+    let errorMessage = 'Não foi possível realizar o login. Procure o administrador do sistema.';
+    
+    if (err.message === 'Invalid login credentials') {
+      errorMessage = 'E-mail ou senha incorretos.';
+    } else if (err.message === 'Email not confirmed') {
+      errorMessage = 'Seu e-mail ainda não foi confirmado.';
+    } else if (err.message === 'Too many requests') {
+      errorMessage = 'Muitas tentativas de acesso. Aguarde alguns minutos e tente novamente.';
+    } else if (err.message === 'Network request failed' || err.message === 'Failed to fetch') {
+      errorMessage = 'Não foi possível conectar ao servidor. Verifique sua conexão com a Internet.';
+    }
+
+    showError(errorMessage);
+  } finally {
     setLoading(false);
   }
 }
 
-// --- Logout ---
+// ======================================================
+// LOGOUT
+// ======================================================
+
 async function handleLogout() {
   try {
     const { error } = await CONTADJUS.supabase.auth.signOut();
@@ -129,7 +162,10 @@ async function handleLogout() {
   }
 }
 
-// --- Recuperação de senha ---
+// ======================================================
+// RECUPERAÇÃO DE SENHA
+// ======================================================
+
 async function handleForgotPassword(e) {
   e.preventDefault();
   hideError();
@@ -154,7 +190,10 @@ async function handleForgotPassword(e) {
   }
 }
 
-// --- Event listeners ---
+// ======================================================
+// EVENTOS
+// ======================================================
+
 document.addEventListener('DOMContentLoaded', () => {
   log('DOM carregado. Inicializando autenticação...');
 
