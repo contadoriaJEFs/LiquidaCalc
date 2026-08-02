@@ -110,7 +110,7 @@ async function handleLogin(e) {
     loginForm.reset();
   } catch (err) {
     logError('Falha no login:', err.message);
-    showError(err.message || 'Erro ao autenticar. Verifique suas credenciais.');
+    showError(err.message || 'Não foi possível realizar o login. Procure o administrador do sistema');
     setLoading(false);
   }
 }
