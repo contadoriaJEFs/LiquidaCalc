@@ -1,5 +1,6 @@
 # Changelog
 
+
 ---
 
 ## Versão 3.5-alpha – Fase 1.8E – Autenticação, Domínio Próprio e Infraestrutura Inicial da Plataforma ContadJus (02/08/2026)
@@ -63,7 +64,7 @@
 - Mantida a hospedagem gratuita utilizando **GitHub Pages**.
 - Configurado o domínio personalizado para acesso ao sistema através do endereço oficial da plataforma.
 - Mantida compatibilidade integral com hospedagem estática, sem necessidade de backend próprio.
-
+- Configuração automática do arquivo `CNAME` pelo GitHub Pages para associação permanente do repositório ao domínio oficial `contadjus.com.br`.
 ### Preservado
 
 - Nenhuma alteração no motor previdenciário.
