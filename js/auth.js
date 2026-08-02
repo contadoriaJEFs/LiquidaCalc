@@ -65,7 +65,7 @@ function setLoading(loading) {
 // --- Verificação de sessão ---
 async function checkSession() {
   try {
-    const { data: { session }, error } = await supabaseClient.auth.getSession();
+    const { data: { session }, error } = await CONTADJUS.supabase.auth.getSession();
     if (error) throw error;
     if (session) {
       log('Sessão ativa:', session.user.email);
@@ -96,7 +96,7 @@ async function handleLogin(e) {
   }
 
   try {
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
+    const { data, error } = await CONTADJUS.supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -118,7 +118,7 @@ async function handleLogin(e) {
 // --- Logout ---
 async function handleLogout() {
   try {
-    const { error } = await supabaseClient.auth.signOut();
+    const { error } = await CONTADJUS.supabase.auth.signOut();
     if (error) throw error;
     log('Logout efetuado.');
     showOverlay();
@@ -141,7 +141,7 @@ async function handleForgotPassword(e) {
   }
 
   try {
-    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+    const { error } = await CONTADJUS.supabase.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.origin + window.location.pathname,
     });
     if (error) throw error;
@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
   forgotLink.addEventListener('click', handleForgotPassword);
 
   // Escuta mudanças de autenticação (ex: expiração de sessão)
-  supabaseClient.auth.onAuthStateChange((event, session) => {
+  CONTADJUS.supabase.auth.onAuthStateChange((event, session) => {
     log('Evento de auth:', event, session?.user?.email);
 
     if (event === 'SIGNED_IN' && session) {
