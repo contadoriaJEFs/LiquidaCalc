@@ -1,4 +1,117 @@
 # Changelog
+
+---
+
+## Versão 3.5-alpha – Fase 1.8E – Autenticação, Domínio Próprio e Infraestrutura Inicial da Plataforma ContadJus (02/08/2026)
+
+### Adicionado
+
+- Implementada autenticação de usuários utilizando **Supabase Auth**.
+- Criado sistema de proteção de acesso ao LiquidaCalc por meio de **overlay de login**, preservando integralmente o funcionamento do sistema existente.
+- Criado o arquivo:
+  - `js/auth.js`, responsável pelo controle completo da autenticação.
+- Criado o arquivo:
+  - `js/supabase.js`, responsável pela inicialização e centralização da conexão com o Supabase.
+- Criado o arquivo:
+  - `css/auth.css`, contendo toda a identidade visual da tela de autenticação.
+- Implementado suporte a:
+  - login por e-mail e senha;
+  - logout;
+  - persistência automática de sessão;
+  - recuperação de senha por e-mail;
+  - monitoramento de alterações de autenticação (`onAuthStateChange`).
+- Implementado controle visual de carregamento durante a autenticação.
+- Implementadas mensagens amigáveis para erros de autenticação.
+- Criado namespace global:
+  - `CONTADJUS`,
+  utilizado para centralizar a comunicação com o Supabase e evitar conflitos globais.
+- Implementado botão flutuante de logout exibido apenas para usuários autenticados.
+- Iniciada a infraestrutura da futura plataforma **ContadJus**, mantendo o **LiquidaCalc** como primeiro módulo do sistema.
+
+### Alterado
+
+- Alterado o `index.html` para inclusão da infraestrutura de autenticação, sem modificar a lógica do motor de cálculos.
+- Incluída referência à biblioteca oficial do Supabase:
+  - `@supabase/supabase-js`.
+- Incluída carga dos novos módulos:
+  - `js/supabase.js`;
+  - `js/auth.js`.
+- Incluída carga do novo arquivo de estilos:
+  - `css/auth.css`.
+- Implementado overlay de autenticação sobre o sistema existente, preservando integralmente o DOM e os eventos da aplicação.
+- Padronizada toda a comunicação com o Supabase através do namespace:
+  - `CONTADJUS.supabase`.
+- Traduzidas mensagens técnicas do Supabase para mensagens amigáveis em português.
+- Padronizado o tratamento de erros e de logs do módulo de autenticação.
+
+### Corrigido
+
+- Corrigido erro de referência:
+  - `ReferenceError: supabaseClient is not defined`.
+- Corrigida a ordem de carregamento dos scripts de autenticação no `index.html`.
+- Corrigida a inicialização do cliente Supabase para utilização do namespace único `CONTADJUS`.
+- Corrigida a persistência de sessão entre recarregamentos da página.
+- Corrigido o fluxo de logout, retornando automaticamente à tela de autenticação.
+- Corrigidas mensagens de erro exibidas ao usuário durante tentativas de autenticação inválidas.
+
+### Infraestrutura
+
+- Registrado e configurado o domínio próprio:
+
+  - `contadjus.com.br`
+
+- Mantida a hospedagem gratuita utilizando **GitHub Pages**.
+- Configurado o domínio personalizado para acesso ao sistema através do endereço oficial da plataforma.
+- Mantida compatibilidade integral com hospedagem estática, sem necessidade de backend próprio.
+
+### Preservado
+
+- Nenhuma alteração no motor previdenciário.
+- Nenhuma alteração nas regras de negócio da evolução dos benefícios.
+- Nenhuma alteração na Guia 1.
+- Nenhuma alteração na Guia 2.
+- Nenhuma alteração na Guia 3.
+- Nenhuma alteração na Guia 4.
+- Nenhuma alteração na Guia 5.
+- Nenhuma alteração na Guia 6.
+- Nenhuma alteração na Guia 7.
+- Nenhuma alteração em:
+  - `core.js`;
+  - `app.js`;
+  - `motor-evolucao.js`;
+  - `beneficios-recebidos.js`;
+  - `diferencas.js`;
+  - `json.js`;
+  - `relatorios.js`;
+  - `data/indices.js`.
+- Todo o processamento dos cálculos permanece sendo executado exclusivamente no navegador do usuário.
+
+### Homologação
+
+Testes aprovados:
+
+- Tela de autenticação exibida corretamente ao acessar o sistema.
+- Login realizado com sucesso utilizando usuários cadastrados no Supabase.
+- Persistência de sessão entre recarregamentos da página.
+- Logout encerrando corretamente a sessão.
+- Bloqueio do sistema após logout.
+- Recuperação de senha integrada ao Supabase.
+- Mensagens amigáveis para credenciais inválidas.
+- Overlay de autenticação sem interferência nas funcionalidades do LiquidaCalc.
+- Sistema preservado integralmente após autenticação.
+- Compatibilidade mantida com GitHub Pages.
+- Domínio personalizado acessando corretamente a aplicação.
+
+### Observação Técnica
+
+Esta fase representa a transição do projeto de uma aplicação HTML/JavaScript isolada para a infraestrutura inicial da plataforma **ContadJus**.
+
+A autenticação foi implementada de forma totalmente desacoplada do motor de cálculos, permitindo proteger o acesso ao sistema sem qualquer alteração nas regras de negócio ou na arquitetura do LiquidaCalc.
+
+O Supabase passou a ser utilizado exclusivamente para autenticação, gerenciamento de usuários e persistência de sessão, permanecendo todo o processamento dos cálculos judiciais executado localmente no navegador do usuário.
+
+Esta infraestrutura servirá como base para os futuros módulos da plataforma ContadJus, preservando a independência do motor de cálculos e a compatibilidade com hospedagem estática via GitHub Pages.
+
 ## Versão 3.4-alpha – Fase 1.8D – Espelho das Diferenças da Guia 4 na Guia 5 (30/07/2026)
 
 ### Adicionado
