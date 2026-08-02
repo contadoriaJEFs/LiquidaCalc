@@ -3,7 +3,7 @@
 // ============================================
 
 // Cria o namespace se não existir
-const CONTADJUS = CONTADJUS || {};
+window.CONTADJUS = window.CONTADJUS || {};
 
 // Credenciais (substitua pelas suas)
 CONTADJUS.SUPABASE_URL = 'https://udxhriuvhfursglrozzy.supabase.co';
