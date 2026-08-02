@@ -2,70 +2,80 @@
 
 **Projeto:** ContadJus
 
+**Módulo:** LiquidaCalc
+
 **Domínio:** contadjus.com.br
+
+**Data da Implantação:** 02/08/2026
 
 ---
 
 # Objetivo
 
-Publicar a aplicação hospedada gratuitamente no GitHub Pages utilizando um domínio próprio registrado no Registro.br.
+Publicar o LiquidaCalc através de um domínio próprio, mantendo a hospedagem gratuita no GitHub Pages e utilizando o Supabase exclusivamente para autenticação e gerenciamento de usuários.
 
-Arquitetura final:
-
-Usuário
-
-↓
-
-https://contadjus.com.br
-
-↓
-
-Registro.br (DNS)
-
-↓
-
-GitHub Pages
-
-↓
-
-Repositório GitHub
-
-↓
-
-Aplicação ContadJus
+A arquitetura adotada elimina a necessidade de hospedagem tradicional ou servidor dedicado.
 
 ---
 
-# Componentes utilizados
+# Arquitetura da Solução
+
+```
+Usuário
+    │
+    ▼
+https://contadjus.com.br
+    │
+    ▼
+Registro.br (DNS)
+    │
+    ▼
+GitHub Pages
+    │
+    ▼
+Repositório GitHub (LiquidaCalc)
+    │
+    ▼
+Supabase Auth
+    │
+    ▼
+LiquidaCalc
+```
+
+---
+
+# Componentes Utilizados
 
 - Registro.br
 - GitHub Pages
-- GitHub Repository
+- Repositório GitHub
 - Arquivo CNAME
-- HTTPS automático do GitHub
+- HTTPS automático (Let's Encrypt)
+- Supabase Auth
 
 ---
 
-# Etapa 1 — Registro do domínio
+# Etapa 1 — Registro do Domínio
 
-O domínio foi registrado no Registro.br.
-
-Domínio escolhido:
+Foi registrado o domínio:
 
 ```
 contadjus.com.br
 ```
 
-Após o registro, o domínio ainda não aponta para nenhum servidor.
+Após o registro, o domínio ainda não aponta para qualquer servidor.
+
+Nesse momento ele apenas passa a existir dentro da infraestrutura do Registro.br.
 
 ---
 
-# Etapa 2 — Publicação no GitHub Pages
+# Etapa 2 — Publicação do Projeto
 
-O projeto foi hospedado em um repositório GitHub.
+O LiquidaCalc foi publicado utilizando GitHub Pages.
 
-Foi habilitado:
+Configuração utilizada:
 
+```
 Settings
 
 ↓
@@ -78,103 +88,71 @@ Deploy from Branch
 
 ↓
 
+Branch:
 main
 
 ↓
 
+Folder:
 /
+```
 
-Após alguns minutos o GitHub passou a publicar automaticamente o site.
-
-Exemplo:
+Após alguns minutos o GitHub disponibilizou o endereço temporário:
 
 ```
-https://usuario.github.io/repositorio
+https://contadoriajefs.github.io/LiquidaCalc/
 ```
+
+Este endereço continuará funcionando mesmo após a configuração do domínio próprio.
 
 ---
 
-# Etapa 3 — Configuração do domínio personalizado
+# Etapa 3 — Configuração do Domínio
 
-No GitHub:
-
-Settings
-
-↓
-
-Pages
-
-↓
-
-Custom Domain
-
-Foi informado:
+No GitHub Pages foi informado:
 
 ```
+Custom Domain
+
+↓
+
 contadjus.com.br
 ```
 
-Neste momento o GitHub exibe:
+Inicialmente apareceu:
 
 ```
 DNS check unsuccessful
 ```
 
-Isso é esperado.
+Este comportamento é esperado.
 
-O GitHub ainda não consegue localizar o domínio.
+O GitHub ainda não consegue localizar o domínio enquanto os registros DNS não forem configurados.
 
 ---
 
-# Etapa 4 — Configuração do DNS no Registro.br
+# Etapa 4 — Erro Encontrado
 
-No painel do Registro.br foram configurados os apontamentos DNS para o GitHub Pages.
+Durante a implantação foi identificado um erro importante.
 
-Após salvar, o Registro.br iniciou a propagação dos novos registros.
+O domínio foi inicialmente associado ao repositório incorreto.
 
-Neste momento apareceu a mensagem:
+Consequências:
+
+- o GitHub criou o arquivo `CNAME` no projeto errado;
+- o domínio permaneceu associado ao repositório incorreto;
+- a validação do DNS nunca seria concluída.
+
+Correção realizada:
+
+- remoção do domínio do repositório incorreto;
+- configuração do domínio no repositório oficial:
 
 ```
-Você está utilizando os servidores DNS do Registro.br.
-
-No momento, os servidores DNS do domínio se encontram em transição.
-
-Servidores DNS externos poderão ser delegados em aproximadamente X minutos.
+https://github.com/contadoriaJEFs/LiquidaCalc
 ```
 
-Essa mensagem indica que a alteração foi aceita e está sendo propagada.
-
-Não é um erro.
-
----
-
-# Etapa 5 — Propagação DNS
-
-A propagação normalmente ocorre em poucos minutos quando apenas os registros são alterados.
-
-Na prática:
-
-- 5 minutos
-- 10 minutos
-- 30 minutos
-
-Em alguns casos pode levar até:
-
-24 horas
-
-dependendo do cache DNS da operadora ou do provedor de internet.
-
-Durante esse período é normal que:
-
-- algumas pessoas consigam acessar;
-- outras ainda não;
-- o GitHub ainda informe erro de DNS.
-
----
-
-# Etapa 6 — Arquivo CNAME
-
-Após a validação do domínio, o GitHub criou automaticamente o arquivo:
+Após essa alteração o GitHub recriou automaticamente o arquivo:
 
 ```
 CNAME
@@ -188,147 +166,314 @@ Conteúdo:
 contadjus.com.br
 ```
 
-Este arquivo informa ao GitHub que aquele repositório responde por esse domínio.
+---
 
-Ele deve permanecer versionado no repositório.
+# Etapa 5 — Configuração do DNS
 
-Não deve ser removido.
+Foi utilizada a Zona DNS do Registro.br.
+
+Importante:
+
+A configuração NÃO é realizada em:
+
+```
+Alterar Servidores DNS
+```
+
+O local correto é:
+
+```
+Configurar Zona DNS
+```
+
+Foram criados os seguintes registros:
+
+## Registros A
+
+```
+185.199.108.153
+
+185.199.109.153
+
+185.199.110.153
+
+185.199.111.153
+```
+
+## Registro CNAME
+
+Host:
+
+```
+www
+```
+
+Destino:
+
+```
+contadoriajefs.github.io
+```
 
 ---
 
-# Etapa 7 — HTTPS
+# Etapa 6 — Propagação DNS
 
-Após o DNS ser validado, o GitHub solicita automaticamente um certificado TLS.
+Após salvar os registros, o Registro.br apresentou a mensagem:
 
-Nesse momento aparece a opção:
+```
+Os servidores DNS do domínio se encontram em transição.
+```
+
+Esta mensagem significa apenas que:
+
+- os registros foram aceitos;
+- estão sendo propagados para a Internet.
+
+Não representa erro.
+
+---
+
+# Tempo de Propagação
+
+Na prática observou-se:
+
+DNS interno:
+
+5 minutos.
+
+DNS público:
+
+5 a 30 minutos.
+
+Em algumas operadoras:
+
+até 24 horas.
+
+Durante esse período é normal ocorrer:
+
+- domínio indisponível;
+- domínio funcionando apenas para algumas pessoas;
+- GitHub continuar informando erro de DNS.
+
+---
+
+# Etapa 7 — Validação do GitHub
+
+Após a propagação, o GitHub passou a exibir:
+
+```
+DNS check successful
+```
+
+Essa mensagem confirma:
+
+- domínio encontrado;
+- registros corretos;
+- GitHub validou a propriedade do domínio.
+
+Este foi o marco que confirmou a conclusão da configuração DNS.
+
+---
+
+# Etapa 8 — Arquivo CNAME
+
+Após a validação o GitHub criou automaticamente:
+
+```
+CNAME
+```
+
+na raiz do repositório.
+
+Conteúdo:
+
+```
+contadjus.com.br
+```
+
+Este arquivo:
+
+- identifica qual domínio pertence ao projeto;
+- deve permanecer versionado;
+- não deve ser removido.
+
+Caso o domínio seja alterado, este arquivo será atualizado automaticamente pelo GitHub.
+
+---
+
+# Etapa 9 — HTTPS
+
+Após validar o domínio, o GitHub iniciou automaticamente a emissão do certificado TLS.
+
+Enquanto o certificado está sendo emitido:
 
 ```
 Enforce HTTPS
 ```
 
-Quando disponível, ela deve permanecer habilitada.
+permanece desabilitado.
 
-A emissão do certificado normalmente leva:
+Isso é esperado.
 
-5 a 30 minutos
+Somente após a emissão do certificado esta opção poderá ser habilitada.
 
-podendo chegar a algumas horas.
+Tempo observado:
 
----
+5 a 30 minutos.
 
-# Etapa 8 — Testes realizados
+Em alguns casos:
 
-Após a propagação:
-
-✓ acesso ao domínio
-
-https://contadjus.com.br
-
-✓ carregamento da aplicação
-
-✓ carregamento do CSS
-
-✓ carregamento do JavaScript
-
-✓ funcionamento do Supabase
-
-✓ autenticação
-
-✓ persistência de sessão
-
-✓ logout
+até algumas horas.
 
 ---
 
-# Problemas encontrados
+# Testes Realizados
+
+## GitHub Pages
+
+✓ Projeto publicado.
+
+✓ Deploy automático funcionando.
+
+---
+
+## Domínio
+
+✓ Domínio reconhecido.
+
+✓ DNS validado.
+
+✓ Arquivo CNAME criado automaticamente.
+
+---
+
+## Autenticação
+
+✓ Supabase funcionando.
+
+✓ Login.
+
+✓ Logout.
+
+✓ Persistência de sessão.
+
+✓ Recuperação de senha.
+
+---
+
+## LiquidaCalc
+
+✓ Sistema carregando normalmente.
+
+✓ Nenhuma alteração no motor de cálculos.
+
+✓ Nenhuma alteração nas regras de negócio.
+
+---
+
+# Problemas Encontrados
 
 ## DNS check unsuccessful
 
-Motivo:
+Causa:
 
-O GitHub ainda não localizou os registros DNS.
-
-Solução:
-
-Aguardar a propagação.
-
----
-
-## Site continua abrindo pelo github.io
-
-Motivo:
-
-Cache DNS.
+DNS ainda não propagado.
 
 Solução:
 
 Aguardar.
 
-Ou utilizar:
+---
 
-Ctrl + Shift + R
+## ERR_TUNNEL_CONNECTION_FAILED
 
-para limpar o cache do navegador.
+Causa observada:
+
+Domínio ainda sem apontamentos DNS válidos.
+
+Solução:
+
+Configurar corretamente a Zona DNS.
+
+---
+
+## Domínio configurado no repositório errado
+
+Causa:
+
+Custom Domain informado no projeto incorreto.
+
+Solução:
+
+Remover o domínio do repositório incorreto.
+
+Configurar novamente no repositório oficial.
 
 ---
 
 ## HTTPS indisponível
 
-Motivo:
+Causa:
 
 Certificado TLS ainda não emitido.
 
 Solução:
 
-Aguardar a emissão automática.
+Aguardar a emissão automática pelo GitHub.
 
 ---
 
-# Fluxo completo
+# Fluxo Completo
 
+```
 Registro.br
 
 ↓
 
-Configuração DNS
+Zona DNS
 
 ↓
 
-Propagação DNS
+Propagação
 
 ↓
 
-GitHub valida domínio
+GitHub Pages
 
 ↓
 
-GitHub cria CNAME
+DNS check successful
 
 ↓
 
-GitHub emite HTTPS
+Arquivo CNAME
 
 ↓
 
-Site disponível
+Certificado HTTPS
 
 ↓
 
-Supabase realiza autenticação
+Supabase Auth
 
 ↓
 
-LiquidaCalc é carregado
+LiquidaCalc
+
+↓
+
+Usuário autenticado
+```
 
 ---
 
-# Tempo observado
+# Tempo Observado
 
 Registro do domínio:
 
 Imediato.
 
-Configuração do GitHub:
+Configuração GitHub Pages:
 
 2 minutos.
 
@@ -336,9 +481,13 @@ Configuração DNS:
 
 5 minutos.
 
-Propagação inicial:
+Propagação:
 
 5 a 30 minutos.
+
+Validação do GitHub:
+
+alguns minutos após a propagação.
 
 Certificado HTTPS:
 
@@ -346,18 +495,33 @@ Certificado HTTPS:
 
 Tempo total esperado:
 
-Entre 10 minutos e 1 hora.
+10 minutos a 1 hora.
 
 Em situações excepcionais:
 
-Até 24 horas.
+até 24 horas.
+
+---
+
+# Lições Aprendidas
+
+- O domínio deve ser configurado no repositório correto antes da validação.
+- O arquivo `CNAME` é criado automaticamente pelo GitHub.
+- A configuração dos registros deve ser realizada na **Zona DNS** do Registro.br.
+- A opção **Alterar Servidores DNS** não deve ser utilizada quando o Registro.br administra a zona DNS.
+- O GitHub Pages utiliza quatro registros A para o domínio principal.
+- O subdomínio `www` utiliza um registro CNAME apontando para `contadoriajefs.github.io`.
+- A mensagem **DNS check successful** confirma que a configuração DNS foi concluída com sucesso.
+- O HTTPS é emitido automaticamente após a validação do domínio.
+- Não é necessário contratar hospedagem para utilizar um domínio próprio com GitHub Pages.
 
 ---
 
 # Resultado Final
 
-A infraestrutura passou a ser composta por:
+A infraestrutura inicial do ContadJus passou a ser composta por:
 
+```
 Usuário
 
 ↓
@@ -374,7 +538,7 @@ GitHub Pages
 
 ↓
 
-Repositório GitHub
+Repositório LiquidaCalc
 
 ↓
 
@@ -383,5 +547,16 @@ Supabase Auth
 ↓
 
 LiquidaCalc
+```
 
-Esta arquitetura mantém o projeto totalmente gratuito para hospedagem, preserva a execução integral dos cálculos no navegador do usuário e estabelece a base para a futura expansão da plataforma ContadJus.
+Com esta implantação, o ContadJus passou a possuir:
+
+- domínio próprio;
+- hospedagem gratuita;
+- deploy automático;
+- autenticação segura via Supabase;
+- infraestrutura preparada para evolução da plataforma;
+- independência de servidor próprio;
+- compatibilidade integral com GitHub Pages.
+
+Esta infraestrutura servirá como base para todos os futuros módulos da plataforma ContadJus.
