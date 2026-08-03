@@ -132,9 +132,9 @@ const CATALOGO_INDEXADORES_ATUALIZACAO = {
     tipo: "correcao_monetaria",
     formato: "fator_mensal",
     natureza: "unidade_conta",
-    origem: "referencia_historica",
-    usoMotorCorrecao: false,
-    descricao: "UFIR preservada como referência histórica. Não utilizada no encadeamento previdenciário do Manual de Cálculo atual."
+    origem: "valor_nominal_convertido",
+    usoMotorCorrecao: true,
+    descricao: "UFIR utilizada como índice de correção monetária de 01/1992 a 12/2000, com fatores mensais derivados dos valores nominais históricos."
 	},
     IPC: {
         nome: "IPC (IBGE)",
@@ -253,8 +253,35 @@ const VALORES_NOMINAIS_INDEXADORES = {
 // =====================================================================
 // BASE COMPACTA DOS INDEXADORES (dados mensais – apenas fatores mensais)
 // =====================================================================
+function converterValoresNominaisEmFatoresMensaisPorProximaCompetencia(valoresNominais) {
+    var fatores = {};
+    var competencias = Object.keys(valoresNominais).sort();
+
+    for (var i = 0; i < competencias.length; i++) {
+        var competenciaAtual = competencias[i];
+
+        if (i === competencias.length - 1) {
+            fatores[competenciaAtual] = 1.0000;
+            continue;
+        }
+
+        var competenciaSeguinte = competencias[i + 1];
+        var valorAtual = valoresNominais[competenciaAtual];
+        var valorSeguinte = valoresNominais[competenciaSeguinte];
+
+        if (!valorAtual || valorAtual === 0) {
+            throw new Error("Valor nominal inválido para " + competenciaAtual + ".");
+        }
+
+        fatores[competenciaAtual] = valorSeguinte / valorAtual;
+    }
+
+    return fatores;
+}
+
 const BASE_INDEXADORES_ATUALIZACAO = {
 	SEM_CORRECAO: {},
+    UFIR: converterValoresNominaisEmFatoresMensaisPorProximaCompetencia(VALORES_NOMINAIS_INDEXADORES.UFIR),
     INPC: {
 		"1991-03": 1.1179,
 		"1991-04": 1.0501,
