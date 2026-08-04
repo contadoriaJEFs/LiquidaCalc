@@ -58,9 +58,13 @@ Foram realizados testes comparativos utilizando:
 #### Competências a partir de 07/1994
 
 ✅ Coeficientes idênticos aos sistemas de referência.
+
 ✅ Valores finais coincidentes com ProjefWeb.
+
 ✅ Valores finais coincidentes com Fábrica de Cálculos.
+
 ✅ Resultados compatíveis com a linha de correção monetária do Manual de Cálculos.
+
 ✅ Linha considerada homologada para utilização operacional.
 
 #### Competências anteriores a 07/1994
