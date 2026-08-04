@@ -37,6 +37,15 @@ const CATALOGO_INDEXADORES_ATUALIZACAO = {
         usoMotorCorrecao: true,
         descricao: "Índice Nacional de Preços ao Consumidor Amplo Especial."
     },
+	IPCAE_CJF_2000: {
+        nome: "IPCA-E (CJF - Transição 12/2000)",
+        tipo: "correcao_monetaria",
+        formato: "fator_mensal",
+        natureza: "indice_correcao",
+        origem: "manual_calculos_cjf",
+        usoMotorCorrecao: true,
+        descricao: "Competência especial de transição prevista no Manual de Cálculos da Justiça Federal para dezembro de 2000."
+    },
     IPCA: {
         nome: "IPCA",
         tipo: "correcao_monetaria",
@@ -462,6 +471,9 @@ const BASE_INDEXADORES_ATUALIZACAO = {
         "2025-01": 1.0,     "2025-02": 1.0148,  "2025-03": 1.0051,  "2025-04": 1.0048,  "2025-05": 1.0035,  "2025-06": 1.0023,
         "2025-07": 1.0021,  "2025-08": 0.9979,  "2025-09": 1.0052,  "2025-10": 1.0003,  "2025-11": 1.0003,  "2025-12": 1.0021,
         "2026-01": 1.0039,  "2026-02": 1.0056,  "2026-03": 1.0091,  "2026-04": 1.0081,  "2026-05": 1.0065,  "2026-06": 1.0014
+    },
+	    IPCAE_CJF_2000: {
+        "2000-12": 1.06035557011
     },
     IPCAE: {
         "1994-07": 1.0521,  "1994-08": 1.05,    "1994-09": 1.0163,  "1994-10": 1.019,   "1994-11": 1.0295,  "1994-12": 1.0225,
