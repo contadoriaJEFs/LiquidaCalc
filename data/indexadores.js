@@ -128,14 +128,23 @@ const CATALOGO_INDEXADORES_ATUALIZACAO = {
         descricao: "Bônus do Tesouro Nacional. Valores nominais convertidos em fatores mensais."
     },
 	UFIR: {
-    nome: "UFIR",
+    nome: "UFIR (Índice de Correção)",
     tipo: "correcao_monetaria",
     formato: "fator_mensal",
     natureza: "unidade_conta",
-    origem: "valor_nominal_convertido",
+    origem: "tabela_oficial",
     usoMotorCorrecao: true,
-    descricao: "UFIR utilizada como índice de correção monetária de 01/1992 a 12/2000, com fatores mensais derivados dos valores nominais históricos."
+    descricao: "UFIR utilizada como índice de correção monetária conforme tabela oficial de fatores mensais de 01/1992 a 12/2000."
 	},
+    UFIR_NOMINAL: {
+        nome: "UFIR (Nominal - Auditoria)",
+        tipo: "auditoria",
+        formato: "valor_nominal",
+        natureza: "unidade_conta",
+        origem: "historico_oficial",
+        usoMotorCorrecao: false,
+        descricao: "Valores nominais históricos da UFIR para conferência e auditoria."
+    },
     IPC: {
         nome: "IPC (IBGE)",
         tipo: "correcao_monetaria",
@@ -218,7 +227,7 @@ const VALORES_NOMINAIS_INDEXADORES = {
         "1989-11": 5.0434,  "1989-12": 7.1324,
         "1990-01": 10.9518, "1990-02": 17.0968, "1990-03": 29.5399
     },
-    UFIR: {
+    UFIR_NOMINAL: {
         "1992-01": 597.06,   "1992-02": 749.91,   "1992-03": 945.64,   "1992-04": 1153.96,
         "1992-05": 1382.79,  "1992-06": 1707.05,  "1992-07": 2104.28,  "1992-08": 2546.39,
         "1992-09": 3135.62,  "1992-10": 3867.16,  "1992-11": 4852.51,  "1992-12": 6002.55,
@@ -253,35 +262,117 @@ const VALORES_NOMINAIS_INDEXADORES = {
 // =====================================================================
 // BASE COMPACTA DOS INDEXADORES (dados mensais – apenas fatores mensais)
 // =====================================================================
-function converterValoresNominaisEmFatoresMensaisPorProximaCompetencia(valoresNominais) {
-    var fatores = {};
-    var competencias = Object.keys(valoresNominais).sort();
-
-    for (var i = 0; i < competencias.length; i++) {
-        var competenciaAtual = competencias[i];
-
-        if (i === competencias.length - 1) {
-            fatores[competenciaAtual] = 1.0000;
-            continue;
-        }
-
-        var competenciaSeguinte = competencias[i + 1];
-        var valorAtual = valoresNominais[competenciaAtual];
-        var valorSeguinte = valoresNominais[competenciaSeguinte];
-
-        if (!valorAtual || valorAtual === 0) {
-            throw new Error("Valor nominal inválido para " + competenciaAtual + ".");
-        }
-
-        fatores[competenciaAtual] = valorSeguinte / valorAtual;
-    }
-
-    return fatores;
-}
-
 const BASE_INDEXADORES_ATUALIZACAO = {
-	SEM_CORRECAO: {},
-    UFIR: converterValoresNominaisEmFatoresMensaisPorProximaCompetencia(VALORES_NOMINAIS_INDEXADORES.UFIR),
+	SEM_CORRECAO: {},    UFIR: {
+        "1992-01": 1.256000,
+        "1992-02": 1.261000,
+        "1992-03": 1.220300,
+        "1992-04": 1.198300,
+        "1992-05": 1.234500,
+        "1992-06": 1.232700,
+        "1992-07": 1.210100,
+        "1992-08": 1.231400,
+        "1992-09": 1.233300,
+        "1992-10": 1.254800,
+        "1992-11": 1.237000,
+        "1992-12": 1.234900,
+        "1993-01": 1.294700,
+        "1993-02": 1.267200,
+        "1993-03": 1.259600,
+        "1993-04": 1.273400,
+        "1993-05": 1.288100,
+        "1993-06": 1.303400,
+        "1993-07": 1.306600,
+        "1993-08": 1.319900,
+        "1993-09": 1.343800,
+        "1993-10": 1.351600,
+        "1993-11": 1.339000,
+        "1993-12": 1.366900,
+        "1994-01": 1.391700,
+        "1994-02": 1.397000,
+        "1994-03": 1.436300,
+        "1994-04": 1.412500,
+        "1994-05": 1.442100,
+        "1994-06": 1.446500,
+        "1994-07": 1.052200,
+        "1994-08": 1.050100,
+        "1994-09": 1.016300,
+        "1994-10": 1.019000,
+        "1994-11": 1.029600,
+        "1994-12": 1.022500,
+        "1995-01": 1.000000,
+        "1995-02": 1.000000,
+        "1995-03": 1.043400,
+        "1995-04": 1.000000,
+        "1995-05": 1.000000,
+        "1995-06": 1.071200,
+        "1995-07": 1.000000,
+        "1995-08": 1.000000,
+        "1995-09": 1.051300,
+        "1995-10": 1.000000,
+        "1995-11": 1.000000,
+        "1995-12": 1.042100,
+        "1996-01": 1.000000,
+        "1996-02": 1.000000,
+        "1996-03": 1.000000,
+        "1996-04": 1.000000,
+        "1996-05": 1.000000,
+        "1996-06": 1.067600,
+        "1996-07": 1.000000,
+        "1996-08": 1.000000,
+        "1996-09": 1.000000,
+        "1996-10": 1.000000,
+        "1996-11": 1.000000,
+        "1996-12": 1.029500,
+        "1997-01": 1.000000,
+        "1997-02": 1.000000,
+        "1997-03": 1.000000,
+        "1997-04": 1.000000,
+        "1997-05": 1.000000,
+        "1997-06": 1.000000,
+        "1997-07": 1.000000,
+        "1997-08": 1.000000,
+        "1997-09": 1.000000,
+        "1997-10": 1.000000,
+        "1997-11": 1.000000,
+        "1997-12": 1.055200,
+        "1998-01": 1.000000,
+        "1998-02": 1.000000,
+        "1998-03": 1.000000,
+        "1998-04": 1.000000,
+        "1998-05": 1.000000,
+        "1998-06": 1.000000,
+        "1998-07": 1.000000,
+        "1998-08": 1.000000,
+        "1998-09": 1.000000,
+        "1998-10": 1.000000,
+        "1998-11": 1.000000,
+        "1998-12": 1.016500,
+        "1999-01": 1.000000,
+        "1999-02": 1.000000,
+        "1999-03": 1.000000,
+        "1999-04": 1.000000,
+        "1999-05": 1.000000,
+        "1999-06": 1.000000,
+        "1999-07": 1.000000,
+        "1999-08": 1.000000,
+        "1999-09": 1.000000,
+        "1999-10": 1.000000,
+        "1999-11": 1.000000,
+        "1999-12": 1.089200,
+        "2000-01": 1.000000,
+        "2000-02": 1.000000,
+        "2000-03": 1.000000,
+        "2000-04": 1.000000,
+        "2000-05": 1.000000,
+        "2000-06": 1.000000,
+        "2000-07": 1.000000,
+        "2000-08": 1.000000,
+        "2000-09": 1.000000,
+        "2000-10": 1.000000,
+        "2000-11": 1.000000,
+        "2000-12": 1.060400,
+    },
     INPC: {
 		"1991-03": 1.1179,
 		"1991-04": 1.0501,
