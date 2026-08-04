@@ -74,6 +74,7 @@ A utilização do índice é opcional e depende do encadeamento escolhido pelo u
   IPCAE_CJF_2000
   ↓
   IPCA-E
+```
 
 ### Testes e Validação
 
