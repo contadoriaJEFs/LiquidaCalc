@@ -77,15 +77,16 @@ IPCA-E
 
 
 ### Testes e Validação
+
 Foram realizados testes comparativos utilizando:
 
 - Manual de Cálculos da Justiça Federal (edição 2022);
 - Sistema ProjefWeb;
 - Planilhas da Fábrica de Cálculos.
 
-### Resultado dos Testes
+## Resultado dos Testes
 
-Competências a partir de 07/1994
+### Competências a partir de 07/1994
 
 ✅ Coeficientes compatíveis com os sistemas de referência.
 ✅ Valores finais coincidentes com ProjefWeb.
