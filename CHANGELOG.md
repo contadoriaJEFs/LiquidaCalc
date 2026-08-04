@@ -49,9 +49,9 @@ Esta versão consolida a conclusão da Fase 1.8E, abrangendo dois marcos relevan
 
 Foram realizados testes comparativos utilizando:
 
-- Manual de Cálculos da Justiça Federal (edição 2022);
-- Sistema ProjefWeb;
-- Planilhas da Fábrica de Cálculos.
+- Manual de Cálculos da Justiça Federal (edição 2022); ✔️
+- Sistema ProjefWeb;✔️
+- Planilhas da Fábrica de Cálculos.✔️
 
 ### Resultado dos Testes
 
