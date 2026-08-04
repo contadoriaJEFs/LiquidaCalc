@@ -263,7 +263,9 @@ const VALORES_NOMINAIS_INDEXADORES = {
 // BASE COMPACTA DOS INDEXADORES (dados mensais – apenas fatores mensais)
 // =====================================================================
 const BASE_INDEXADORES_ATUALIZACAO = {
-	SEM_CORRECAO: {},    UFIR: {
+	SEM_CORRECAO: {},    
+	
+	UFIR: {
         "1992-01": 1.256000,
         "1992-02": 1.261000,
         "1992-03": 1.220300,
