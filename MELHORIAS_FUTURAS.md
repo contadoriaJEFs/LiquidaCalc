@@ -136,6 +136,14 @@
 - [ ] Juros pela SELIC.
 - [ ] Juros por período configurável.
 - [ ] Memória detalhada dos juros.
+      
+## Pendências de UX da Guia 5
+
+- [ ] Exibir indexador antes do período nos encadeamentos.
+- [ ] Exibir nomes amigáveis dos indexadores.
+- [ ] Exibir resumo textual do encadeamento semelhante à Fábrica de Cálculos.
+- [ ] Revisar layout do painel de parâmetros carregados.
+- [ ] Consolidar informações de períodos e índices em formato mais legível ao usuário.
 
 ---
 
@@ -182,3 +190,4 @@
 - [ ] Múltiplos benefícios recebidos.
 - [ ] Compensação com acumulação de atrasados.
 - [ ] Abono Anual.
+
