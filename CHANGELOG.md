@@ -1,177 +1,163 @@
 # Changelog
 
-## Changelog – Implementação da UFIR na Linha de Correção Monetária
+---
 
-### Data
-03/08/2026
+# Versão 3.5-alpha – Fase 1.8E – Plataforma ContadJus, Autenticação e Motor de Correção Monetária (03/08/2026)
 
-### Versão
-Fase 1.8E – Motor de Correção Monetária
+## Resumo da Versão
+
+Esta versão consolida a conclusão da Fase 1.8E, abrangendo dois marcos relevantes do projeto:
+
+### Plataforma ContadJus
+
+- Implantação da infraestrutura inicial da plataforma ContadJus.
+- Registro e configuração do domínio oficial `contadjus.com.br`.
+- Implementação da autenticação de usuários utilizando Supabase Auth.
+- Criação da primeira camada de controle de acesso ao sistema.
+
+### Motor de Correção Monetária
+
+- Consolidação da infraestrutura da Guia 5.
+- Implementação operacional da UFIR.
+- Separação entre UFIR operacional e UFIR histórica.
+- Validação da linha de correção monetária perante sistemas de referência.
+- Conclusão da primeira versão funcional do motor de atualização monetária.
 
 ---
 
-### Inclusão da UFIR como índice operacional
+## Fase 1.8E – Implementação e Homologação da UFIR
 
-Foi implementada a separação entre:
+### Adicionado
 
-- **UFIR (Índice de Correção)**: utilizada pelo motor de atualização monetária.
-- **UFIR_NOMINAL (Auditoria)**: mantida exclusivamente para rastreabilidade, conferência histórica e validação documental.
+- Implementado o índice operacional **UFIR (Índice de Correção)**.
+- Implementado o índice histórico **UFIR_NOMINAL (Auditoria)**.
+- Criada separação definitiva entre:
+  - índice utilizado nos cálculos;
+  - valores históricos utilizados para auditoria.
+- Implementada integração da UFIR à base de atualização monetária.
+- Implementada exibição diferenciada da UFIR operacional e da UFIR histórica nos componentes administrativos.
 
-A base operacional da UFIR passou a utilizar fatores mensais próprios, independentes dos valores nominais históricos, permitindo seu uso direto nos encadeamentos de correção monetária.
+### Alterado
 
----
+- A UFIR passou a possuir tratamento próprio na base de indexadores.
+- A atualização monetária passou a utilizar fatores mensais específicos para UFIR.
+- Eliminada a dependência de conversão automática dos valores nominais históricos.
+- Preservada integralmente a base histórica de rastreabilidade em:
+  - `UFIR_NOMINAL`.
 
-### Adequação do catálogo de indexadores
+### Testes e Validação
 
-Foi criado tratamento distinto para:
+Foram realizados testes comparativos utilizando:
 
-- **UFIR (Índice de Correção)** → índice operacional habilitado para cálculo.
-- **UFIR (Nominal - Auditoria)** → base histórica não utilizada pelo motor.
+- Manual de Cálculos da Justiça Federal (edição 2022);
+- Sistema ProjefWeb;
+- Planilhas da Fábrica de Cálculos.
 
-A diferenciação passou a ser exibida nos seletores administrativos, reduzindo o risco de utilização indevida dos valores nominais em encadeamentos de atualização.
+### Resultado dos Testes
 
----
+#### Competências a partir de 07/1994
 
-### Testes e validação
-
-Foram realizados testes comparativos utilizando a linha de correção monetária do **Manual de Cálculos da Justiça Federal (edição 2022)** para ações condenatórias em geral.
-
-A validação foi executada por comparação direta com:
-
-- Sistema **ProjefWeb**.
-- Planilhas de referência da **Fábrica de Cálculos**.
-
----
-
-### Resultado dos testes
-
-#### Período de 07/1994 em diante
-
-Resultado:
-
-✅ Coeficientes idênticos aos apurados pelos sistemas de referência.
+✅ Coeficientes idênticos aos sistemas de referência.
 
 ✅ Valores finais coincidentes com ProjefWeb.
 
 ✅ Valores finais coincidentes com Fábrica de Cálculos.
 
-✅ Linha de correção considerada homologada para uso operacional.
+✅ Resultados compatíveis com a linha de correção monetária do Manual de Cálculos.
 
----
+✅ Linha considerada homologada para utilização operacional.
 
-#### Período anterior a 07/1994
+#### Competências anteriores a 07/1994
 
 Foi identificada divergência residual em relação aos coeficientes esperados do Manual.
 
-A investigação preliminar indica possível diferença metodológica relacionada às transições monetárias e aos critérios históricos utilizados antes da implementação do Plano Real.
-
 Observações:
 
-- O período anterior a 07/1994 possui incidência extremamente reduzida na rotina da Contadoria.
-- A divergência não afeta os resultados homologados para o período posterior a 07/1994.
-- A revisão histórica do trecho 01/1992 a 06/1994 permanece registrada como melhoria futura, sem impacto na conclusão da implementação atual.
+- A divergência restringe-se ao período compreendido entre 01/1992 e 06/1994.
+- O período posterior a 07/1994 encontra-se validado.
+- A divergência não interfere na homologação da funcionalidade.
+- O trecho permanecerá registrado para futura validação histórica.
+- A ocorrência prática desse intervalo é extremamente reduzida na rotina atual da Contadoria Judicial.
+
+### Homologação
+
+Após testes comparativos realizados com o Manual de Cálculos da Justiça Federal (2022), ProjefWeb e Fábrica de Cálculos, a linha de correção monetária baseada em UFIR apresentou coincidência integral de coeficientes e valores finais para competências a partir de 07/1994.
+
+Dessa forma, a implementação da UFIR como índice operacional de correção monetária é considerada:
+
+✅ Concluída.
+
+✅ Integrada ao motor de atualização.
+
+✅ Disponível para encadeamentos.
+
+✅ Testada.
+
+✅ Homologada para utilização operacional a partir de 07/1994.
 
 ---
 
-### Situação da funcionalidade
-
-#### UFIR (Índice de Correção)
-
-Status:
-
-✅ Implementada
-
-✅ Integrada ao motor de atualização
-
-✅ Disponível para encadeamentos
-
-✅ Testada
-
-✅ Homologada para competências a partir de 07/1994
-
----
-
-### Conclusão
-
-Após testes comparativos realizados com o Manual de Cálculos da Justiça Federal (2022), ProjefWeb e Fábrica de Cálculos, a linha de correção monetária baseada em UFIR apresentou resultados idênticos para competências a partir de 07/1994.
-
-Dessa forma, a implementação da UFIR como índice operacional de correção monetária é considerada **concluída e homologada para utilização a partir de 07/1994**, permanecendo o período de 01/1992 a 06/1994 registrado para futura validação histórica específica.
-
----
-
-## Versão 3.5-alpha – Fase 1.8E – Autenticação, Domínio Próprio e Infraestrutura Inicial da Plataforma ContadJus (02/08/2026)
+## Fase 1.8E – Autenticação, Domínio Próprio e Infraestrutura Inicial da Plataforma ContadJus
 
 ### Adicionado
 
 - Implementada autenticação de usuários utilizando **Supabase Auth**.
-- Criado sistema de proteção de acesso ao LiquidaCalc por meio de **overlay de login**, preservando integralmente o funcionamento do sistema existente.
+- Criado sistema de proteção de acesso ao LiquidaCalc por meio de overlay de autenticação.
 - Criado o arquivo:
-  - `js/auth.js`, responsável pelo controle completo da autenticação.
+  - `js/auth.js`.
 - Criado o arquivo:
-  - `js/supabase.js`, responsável pela inicialização e centralização da conexão com o Supabase.
+  - `js/supabase.js`.
 - Criado o arquivo:
-  - `css/auth.css`, contendo toda a identidade visual da tela de autenticação.
+  - `css/auth.css`.
 - Implementado suporte a:
-  - login por e-mail e senha;
+  - login;
   - logout;
   - persistência automática de sessão;
-  - recuperação de senha por e-mail;
-  - monitoramento de alterações de autenticação (`onAuthStateChange`).
-- Implementado controle visual de carregamento durante a autenticação.
-- Implementadas mensagens amigáveis para erros de autenticação.
+  - recuperação de senha;
+  - monitoramento de autenticação (`onAuthStateChange`).
+- Implementado botão flutuante de logout.
 - Criado namespace global:
-  - `CONTADJUS`,
-  utilizado para centralizar a comunicação com o Supabase e evitar conflitos globais.
-- Implementado botão flutuante de logout exibido apenas para usuários autenticados.
-- Iniciada a infraestrutura da futura plataforma **ContadJus**, mantendo o **LiquidaCalc** como primeiro módulo do sistema.
+  - `CONTADJUS`.
+- Iniciada a infraestrutura institucional da plataforma ContadJus.
 
 ### Alterado
 
-- Alterado o `index.html` para inclusão da infraestrutura de autenticação, sem modificar a lógica do motor de cálculos.
-- Incluída referência à biblioteca oficial do Supabase:
-  - `@supabase/supabase-js`.
-- Incluída carga dos novos módulos:
+- Atualizado o `index.html` para integração da camada de autenticação.
+- Integrada a biblioteca oficial do Supabase.
+- Implementado carregamento dos módulos:
+  - `js/auth.js`;
   - `js/supabase.js`;
-  - `js/auth.js`.
-- Incluída carga do novo arquivo de estilos:
   - `css/auth.css`.
-- Implementado overlay de autenticação sobre o sistema existente, preservando integralmente o DOM e os eventos da aplicação.
-- Padronizada toda a comunicação com o Supabase através do namespace:
+- Padronizada a comunicação utilizando:
   - `CONTADJUS.supabase`.
-- Traduzidas mensagens técnicas do Supabase para mensagens amigáveis em português.
-- Padronizado o tratamento de erros e de logs do módulo de autenticação.
+- Traduzidas mensagens técnicas para mensagens amigáveis em português.
+- Mantida total independência do motor de cálculos.
 
 ### Corrigido
 
-- Corrigido erro de referência:
+- Corrigido erro:
   - `ReferenceError: supabaseClient is not defined`.
-- Corrigida a ordem de carregamento dos scripts de autenticação no `index.html`.
-- Corrigida a inicialização do cliente Supabase para utilização do namespace único `CONTADJUS`.
-- Corrigida a persistência de sessão entre recarregamentos da página.
-- Corrigido o fluxo de logout, retornando automaticamente à tela de autenticação.
-- Corrigidas mensagens de erro exibidas ao usuário durante tentativas de autenticação inválidas.
+- Corrigida a ordem de carregamento dos scripts.
+- Corrigida a persistência de sessão.
+- Corrigido o fluxo de logout.
+- Corrigida a inicialização do cliente Supabase.
 
 ### Infraestrutura
 
-- Registrado e configurado o domínio próprio:
+- Registrado o domínio oficial:
 
-  - `contadjus.com.br`
+  `contadjus.com.br`
 
-- Mantida a hospedagem gratuita utilizando **GitHub Pages**.
-- Configurado o domínio personalizado para acesso ao sistema através do endereço oficial da plataforma.
-- Mantida compatibilidade integral com hospedagem estática, sem necessidade de backend próprio.
-- Configuração automática do arquivo `CNAME` pelo GitHub Pages para associação permanente do repositório ao domínio oficial `contadjus.com.br`.
+- Configurada hospedagem através do GitHub Pages.
+- Configurado domínio personalizado da plataforma.
+- Mantida arquitetura totalmente estática.
+- Mantido processamento integral dos cálculos no navegador do usuário.
+
 ### Preservado
 
 - Nenhuma alteração no motor previdenciário.
-- Nenhuma alteração nas regras de negócio da evolução dos benefícios.
-- Nenhuma alteração na Guia 1.
-- Nenhuma alteração na Guia 2.
-- Nenhuma alteração na Guia 3.
-- Nenhuma alteração na Guia 4.
-- Nenhuma alteração na Guia 5.
-- Nenhuma alteração na Guia 6.
-- Nenhuma alteração na Guia 7.
+- Nenhuma alteração nas regras de negócio.
+- Nenhuma alteração nas Guias 1 a 7.
 - Nenhuma alteração em:
   - `core.js`;
   - `app.js`;
@@ -181,33 +167,36 @@ Dessa forma, a implementação da UFIR como índice operacional de correção mo
   - `json.js`;
   - `relatorios.js`;
   - `data/indices.js`.
-- Todo o processamento dos cálculos permanece sendo executado exclusivamente no navegador do usuário.
 
 ### Homologação
 
 Testes aprovados:
 
-- Tela de autenticação exibida corretamente ao acessar o sistema.
-- Login realizado com sucesso utilizando usuários cadastrados no Supabase.
-- Persistência de sessão entre recarregamentos da página.
-- Logout encerrando corretamente a sessão.
-- Bloqueio do sistema após logout.
-- Recuperação de senha integrada ao Supabase.
-- Mensagens amigáveis para credenciais inválidas.
-- Overlay de autenticação sem interferência nas funcionalidades do LiquidaCalc.
-- Sistema preservado integralmente após autenticação.
-- Compatibilidade mantida com GitHub Pages.
-- Domínio personalizado acessando corretamente a aplicação.
+- Login funcional.
+- Logout funcional.
+- Persistência de sessão funcional.
+- Recuperação de senha funcional.
+- Compatibilidade preservada com GitHub Pages.
+- Compatibilidade preservada com LiquidaCalc.
+- Overlay de autenticação sem interferência no sistema.
+- Domínio personalizado funcionando corretamente.
 
-### Observação Técnica
+### Marco Institucional
 
-Esta fase representa a transição do projeto de uma aplicação HTML/JavaScript isolada para a infraestrutura inicial da plataforma **ContadJus**.
+Esta versão representa a transição formal do projeto LiquidaCalc para a infraestrutura inicial da plataforma ContadJus.
 
-A autenticação foi implementada de forma totalmente desacoplada do motor de cálculos, permitindo proteger o acesso ao sistema sem qualquer alteração nas regras de negócio ou na arquitetura do LiquidaCalc.
+Principais marcos:
 
-O Supabase passou a ser utilizado exclusivamente para autenticação, gerenciamento de usuários e persistência de sessão, permanecendo todo o processamento dos cálculos judiciais executado localmente no navegador do usuário.
+- criação da identidade institucional da plataforma;
+- aquisição do domínio próprio;
+- autenticação de usuários;
+- preparação para gerenciamento de contas;
+- preparação para futuros módulos;
+- manutenção da independência do motor de cálculos.
 
-Esta infraestrutura servirá como base para os futuros módulos da plataforma ContadJus, preservando a independência do motor de cálculos e a compatibilidade com hospedagem estática via GitHub Pages.
+O LiquidaCalc permanece como núcleo de cálculos previdenciários da plataforma ContadJus, agora operando sobre infraestrutura própria de autenticação, domínio e expansão futura.
+
+---
 
 ## Versão 3.4-alpha – Fase 1.8D – Espelho das Diferenças da Guia 4 na Guia 5 (30/07/2026)
 
