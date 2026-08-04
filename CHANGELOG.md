@@ -85,7 +85,9 @@ Após testes comparativos realizados com o Manual de Cálculos da Justiça Feder
 
 Dessa forma, a implementação da UFIR como índice operacional de correção monetária é considerada:
 
-✅ Concluída.
+✅ Não Concluída, visto que deveria iniciar a partir de 01/1992.
+
+✅ Funcional a partir de 07/1994
 
 ✅ Integrada ao motor de atualização.
 
@@ -93,7 +95,11 @@ Dessa forma, a implementação da UFIR como índice operacional de correção mo
 
 ✅ Testada.
 
-✅ Homologada para utilização operacional a partir de 07/1994.
+✅ A linha normativa do Manual estabelece a utilização da UFIR de 01/1992 a 12/2000.
+
+A implementação foi comparada com ProjefWeb e Fábrica de Cálculos, apresentando coincidência integral dos resultados para competências a partir de 07/1994.
+
+O período compreendido entre 01/1992 e 06/1994 permanece registrado para validação histórica complementar.
 
 ---
 
