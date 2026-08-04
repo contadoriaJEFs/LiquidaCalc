@@ -1,5 +1,101 @@
 # Changelog
 
+## Changelog – Implementação da UFIR na Linha de Correção Monetária
+
+### Data
+03/08/2026
+
+### Versão
+Fase 1.8E – Motor de Correção Monetária
+
+---
+
+### Inclusão da UFIR como índice operacional
+
+Foi implementada a separação entre:
+
+- **UFIR (Índice de Correção)**: utilizada pelo motor de atualização monetária.
+- **UFIR_NOMINAL (Auditoria)**: mantida exclusivamente para rastreabilidade, conferência histórica e validação documental.
+
+A base operacional da UFIR passou a utilizar fatores mensais próprios, independentes dos valores nominais históricos, permitindo seu uso direto nos encadeamentos de correção monetária.
+
+---
+
+### Adequação do catálogo de indexadores
+
+Foi criado tratamento distinto para:
+
+- **UFIR (Índice de Correção)** → índice operacional habilitado para cálculo.
+- **UFIR (Nominal - Auditoria)** → base histórica não utilizada pelo motor.
+
+A diferenciação passou a ser exibida nos seletores administrativos, reduzindo o risco de utilização indevida dos valores nominais em encadeamentos de atualização.
+
+---
+
+### Testes e validação
+
+Foram realizados testes comparativos utilizando a linha de correção monetária do **Manual de Cálculos da Justiça Federal (edição 2022)** para ações condenatórias em geral.
+
+A validação foi executada por comparação direta com:
+
+- Sistema **ProjefWeb**.
+- Planilhas de referência da **Fábrica de Cálculos**.
+
+---
+
+### Resultado dos testes
+
+#### Período de 07/1994 em diante
+
+Resultado:
+
+✅ Coeficientes idênticos aos apurados pelos sistemas de referência.
+
+✅ Valores finais coincidentes com ProjefWeb.
+
+✅ Valores finais coincidentes com Fábrica de Cálculos.
+
+✅ Linha de correção considerada homologada para uso operacional.
+
+---
+
+#### Período anterior a 07/1994
+
+Foi identificada divergência residual em relação aos coeficientes esperados do Manual.
+
+A investigação preliminar indica possível diferença metodológica relacionada às transições monetárias e aos critérios históricos utilizados antes da implementação do Plano Real.
+
+Observações:
+
+- O período anterior a 07/1994 possui incidência extremamente reduzida na rotina da Contadoria.
+- A divergência não afeta os resultados homologados para o período posterior a 07/1994.
+- A revisão histórica do trecho 01/1992 a 06/1994 permanece registrada como melhoria futura, sem impacto na conclusão da implementação atual.
+
+---
+
+### Situação da funcionalidade
+
+#### UFIR (Índice de Correção)
+
+Status:
+
+✅ Implementada
+
+✅ Integrada ao motor de atualização
+
+✅ Disponível para encadeamentos
+
+✅ Testada
+
+✅ Homologada para competências a partir de 07/1994
+
+---
+
+### Conclusão
+
+Após testes comparativos realizados com o Manual de Cálculos da Justiça Federal (2022), ProjefWeb e Fábrica de Cálculos, a linha de correção monetária baseada em UFIR apresentou resultados idênticos para competências a partir de 07/1994.
+
+Dessa forma, a implementação da UFIR como índice operacional de correção monetária é considerada **concluída e homologada para utilização a partir de 07/1994**, permanecendo o período de 01/1992 a 06/1994 registrado para futura validação histórica específica.
 
 ---
 
