@@ -56,24 +56,24 @@ A análise do Manual de Cálculos da Justiça Federal indicou a existência da s
 
 Para permitir a reprodução de metodologias observadas em sistemas de cálculo judiciais, foi criado o índice especial:
 
-- `IPCAE_CJF_2000`
-
-destinado exclusivamente à competência:
-
-- `12/2000`
+  - `IPCAE_CJF_2000`
+  
+  destinado exclusivamente à competência:
+  
+  - `12/2000`
 
 Esse índice representa uma alternativa de transição entre a UFIR e o IPCA-E mensal, preservando simultaneamente a série histórica original do IPCA-E.
 
 A utilização do índice é opcional e depende do encadeamento escolhido pelo usuário.
 
-Exemplo:
-
-```text
-UFIR
-↓
-IPCAE_CJF_2000
-↓
-IPCA-E
+  Exemplo:
+  
+  ```text
+  UFIR
+  ↓
+  IPCAE_CJF_2000
+  ↓
+  IPCA-E
 
 
 ### Testes e Validação
