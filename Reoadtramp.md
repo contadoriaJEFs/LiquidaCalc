@@ -24,7 +24,7 @@ Status:
 
 ## ⚠️ Validação histórica complementar pendente para 01/1992 a 06/1994
 
-Fase 1.8E – Encerramento
+## Fase 1.8E – Encerramento
 Pendências Técnicas
 Homologação histórica
 
@@ -141,7 +141,7 @@ Expandir estrutura:
   "juros": []
 }
 
-Fase 1.9 – Memória de Cálculo Avançada
+## Fase 1.9 – Memória de Cálculo Avançada
 Melhorias
 Exportação PDF.
 Exportação Word.
@@ -157,7 +157,7 @@ Coeficientes utilizados
 Origem dos índices
 Versão do Manual
 
-Fase 2.0 – Plataforma ContadJus
+## Fase 2.0 – Plataforma ContadJus
 Usuários
 Cadastro.
 Login.
@@ -183,7 +183,7 @@ Logs.
 Auditoria.
 Objetivo Estratégico
 
-Ao final das próximas fases, o ContadJus deverá ser capaz de reproduzir integralmente:
+## Ao final das próximas fases, o ContadJus deverá ser capaz de reproduzir integralmente:
 
 ✅ Manual de Cálculos 2022
 
