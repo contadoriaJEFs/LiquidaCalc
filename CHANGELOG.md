@@ -75,7 +75,6 @@ A utilização do índice é opcional e depende do encadeamento escolhido pelo u
   ↓
   IPCA-E
 
-
 ### Testes e Validação
 
 Foram realizados testes comparativos utilizando:
