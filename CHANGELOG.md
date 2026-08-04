@@ -2,6 +2,8 @@
 
 ---
 
+
+
 # Versão 3.5-alpha – Fase 1.8E – Plataforma ContadJus, Autenticação e Motor de Correção Monetária (03/08/2026)
 
 ## Resumo da Versão
@@ -136,7 +138,36 @@ Os resultados produzidos pelo ContadJus apresentam coincidência prática com Pr
 A criação do índice especial IPCAE_CJF_2000 permitiu reproduzir metodologias de transição observadas em sistemas de referência, sem alterar a série mensal original do IPCA-E.
 Permanece pendente apenas a validação histórica específica do período compreendido entre 01/1992 e 06/1994, necessária para considerar totalmente encerrada a implementação normativa da UFIR no intervalo integral previsto pelo Manual de Cálculos da Justiça Federal.
 
+### Homologação Complementar – Manuais de Cálculos 2022 e 2026
 
+Foram realizados testes adicionais comparando os coeficientes produzidos pelo ContadJus com:
+
+- ProjefWeb;
+- Fábrica de Cálculos;
+- Base interna de indexadores homologados.
+
+Foram avaliadas as linhas de atualização monetária dos:
+
+- Manual de Cálculos da Justiça Federal (edição 2022);
+- Manual de Cálculos da Justiça Federal (edição 2026).
+
+Resultados observados:
+
+✅ MC 2022 reproduzido com sucesso.
+
+✅ MC 2026 reproduzido com sucesso.
+
+✅ Coeficientes previdenciários compatíveis com os sistemas de referência.
+
+✅ Coeficientes de ações condenatórias em geral compatíveis com os sistemas de referência.
+
+✅ Diferenças limitadas a casas decimais residuais, compatíveis com critérios de arredondamento, truncamento e precisão interna.
+
+✅ Nenhuma divergência material identificada nos resultados finais.
+
+A validação demonstrou que o motor de atualização monetária do ContadJus é capaz de reproduzir diferentes versões do Manual de Cálculos da Justiça Federal mediante simples alteração dos encadeamentos de indexadores, sem necessidade de mudanças na lógica de processamento.
+
+Essa homologação reforça a arquitetura parametrizada implementada na Fase 1.8E, na qual os critérios de atualização são definidos pelos encadeamentos, permanecendo o motor de cálculo independente das regras específicas de cada Manual.
 ---
 
 ## Fase 1.8E – Autenticação, Domínio Próprio e Infraestrutura Inicial da Plataforma ContadJus (02/08/2026)
