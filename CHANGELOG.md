@@ -88,45 +88,46 @@ Foram realizados testes comparativos utilizando:
 
 ### Competências a partir de 07/1994
 
-✅ Coeficientes compatíveis com os sistemas de referência.
-✅ Valores finais coincidentes com ProjefWeb.
-✅ Valores finais coincidentes com Fábrica de Cálculos.
-✅ Resultados compatíveis com a linha de correção monetária do Manual de Cálculos.
-✅ Linha considerada operacionalmente válida para utilização prática.
+  ✅ Coeficientes compatíveis com os sistemas de referência.
+  ✅ Valores finais coincidentes com ProjefWeb.
+  ✅ Valores finais coincidentes com Fábrica de Cálculos.
+  ✅ Resultados compatíveis com a linha de correção monetária do Manual de Cálculos.
+  ✅ Linha considerada operacionalmente válida para utilização prática.
 
 ### Comparações com a Fábrica de Cálculos
 
 Após a implementação da competência especial de transição IPCAE_CJF_2000, os coeficientes calculados pelo ContadJus passaram a apresentar aderência muito elevada aos coeficientes produzidos pela Fábrica de Cálculos.
 As diferenças remanescentes ficaram limitadas a valores residuais, compatíveis com:
 
-- critérios distintos de arredondamento;
-- quantidade de casas decimais utilizadas internamente;
-- formas de acumulação e truncamento adotadas pelos sistemas comparados.
-Não foi identificado impacto material nos resultados finais decorrente dessas diferenças residuais.
-Competências anteriores a 07/1994
-Foi identificada divergência residual em relação aos coeficientes esperados do Manual.
-Observações:
+  - critérios distintos de arredondamento;
+  - quantidade de casas decimais utilizadas internamente;
+  - formas de acumulação e truncamento adotadas pelos sistemas comparados.
+  Não foi identificado impacto material nos resultados finais decorrente dessas diferenças residuais.
+  Competências anteriores a 07/1994
+  Foi identificada divergência residual em relação aos coeficientes esperados do Manual.
 
-- A divergência restringe-se ao período compreendido entre 01/1992 e 06/1994.
-- O período posterior a 07/1994 encontra-se validado.
-- A divergência não interfere na utilização operacional da funcionalidade.
-- O trecho permanecerá registrado para futura validação histórica.
-- A ocorrência prática desse intervalo é extremamente reduzida na rotina atual da Contadoria Judicial.
-Homologação
+### Observações:
+
+  - A divergência restringe-se ao período compreendido entre 01/1992 e 06/1994.
+  - O período posterior a 07/1994 encontra-se validado.
+  - A divergência não interfere na utilização operacional da funcionalidade.
+  - O trecho permanecerá registrado para futura validação histórica.
+  - A ocorrência prática desse intervalo é extremamente reduzida na rotina atual da Contadoria Judicial.
+  Homologação
 
 Após testes comparativos realizados com o Manual de Cálculos da Justiça Federal (2022), ProjefWeb e Fábrica de Cálculos, a implementação da UFIR apresentou aderência prática aos sistemas de referência para competências a partir de 07/1994.
 Status atual
 
-✅ Funcional para competências a partir de 07/1994.
-✅ Integrada ao motor de atualização monetária.
-✅ Disponível para utilização em encadeamentos.
-✅ Testada mediante comparação com ProjefWeb.
-✅ Testada mediante comparação com Fábrica de Cálculos.
-✅ Compatível com a linha de correção monetária utilizada nos cenários homologados.
-✅ Compatível com a alternativa de transição UFIR → IPCAE_CJF_2000 → IPCA-E.
-⚠️ A implementação ainda não pode ser considerada integralmente concluída para a série normativa completa da UFIR.
-⚠️ O Manual de Cálculos estabelece a utilização da UFIR no período compreendido entre 01/1992 e 12/2000.
-⚠️ O trecho compreendido entre 01/1992 e 06/1994 permanece registrado para validação histórica complementar.
+  ✅ Funcional para competências a partir de 07/1994.
+  ✅ Integrada ao motor de atualização monetária.
+  ✅ Disponível para utilização em encadeamentos.
+  ✅ Testada mediante comparação com ProjefWeb.
+  ✅ Testada mediante comparação com Fábrica de Cálculos.
+  ✅ Compatível com a linha de correção monetária utilizada nos cenários homologados.
+  ✅ Compatível com a alternativa de transição UFIR → IPCAE_CJF_2000 → IPCA-E.
+  ⚠️ A implementação ainda não pode ser considerada integralmente concluída para a série normativa completa da UFIR.
+  ⚠️ O Manual de Cálculos estabelece a utilização da UFIR no período compreendido entre 01/1992 e 12/2000.
+  ⚠️ O trecho compreendido entre 01/1992 e 06/1994 permanece registrado para validação histórica complementar.
 
 ### Conclusão
 
