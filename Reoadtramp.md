@@ -1,4 +1,4 @@
-Roadmap ContadJus – Pós-Homologação da Correção Monetária
+# Roadmap ContadJus – Pós-Homologação da Correção Monetária
 Situação Atual
 Fase 1.8E – Motor de Correção Monetária
 
@@ -22,7 +22,7 @@ Status:
 
 ✅ Compatibilidade prática comprovada a partir de 07/1994
 
-⚠️ Validação histórica complementar pendente para 01/1992 a 06/1994
+## ⚠️ Validação histórica complementar pendente para 01/1992 a 06/1994
 
 Fase 1.8E – Encerramento
 Pendências Técnicas
