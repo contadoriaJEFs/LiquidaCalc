@@ -1,255 +1,642 @@
-## README.md – Sistema de Evolução de Benefício Previdenciário RGPS/INSS
+# ContadJus
 
-**Versão:** 3.3 (Fase 1.7D2)  
-**Status:** Estável – homologado funcionalmente e visualmente  
-**Última atualização:** 28/07/2026
+## LiquidaCalc, módulo de cálculos previdenciários RGPS/INSS
 
-### Visão Geral
+**Versão do arquivo de caso:** 3.3  
+**Marco funcional:** Fase 1.8F-B4  
+**Status:** Em desenvolvimento, com as fases 1.8E, 1.8F-A, 1.8F-A2 e 1.8F-B1 a B4 homologadas  
+**Última atualização:** 06/08/2026
 
-Sistema profissional para cálculo de evolução de benefícios previdenciários no âmbito do RGPS/INSS. Desenvolvido em HTML, CSS e JavaScript puro, com foco em usabilidade, rastreabilidade, auditoria e conformidade com cálculos judiciais e administrativos.
+## Visão geral
 
-O sistema permite calcular a Renda Mensal Atualizada (RMA) de benefícios, comparar com valores efetivamente recebidos, apurar diferenças mensais e de abono anual, documentar alterações manuais, justificar competências modificadas e gerar relatórios internos e externos.
+O **ContadJus** é uma plataforma de cálculos judiciais executada no navegador. O **LiquidaCalc** é o primeiro módulo da plataforma e está voltado à evolução de benefícios do RGPS/INSS, apuração de diferenças, correção monetária e juros de mora.
 
----
+O projeto prioriza:
 
-### Funcionalidades Principais
+- rastreabilidade da memória de cálculo;
+- auditabilidade dos critérios aplicados;
+- separação entre motores matemáticos e parâmetros jurídicos;
+- compatibilidade com casos e encadeamentos antigos;
+- execução local da lógica de cálculo;
+- interface responsiva e organizada por guias;
+- evolução incremental com testes de aceitação por fase.
 
-#### Guia 1 – Entradas
+A autenticação utiliza **Supabase Auth**. O Supabase controla o acesso, mas não participa dos cálculos.
 
-- Dados processuais: processo, autor, réu, CPF, vara, data do cálculo e observações.
-- Tipo de ação: previdenciária, condenatória ou tributária.
-- Datas processuais: ajuizamento, atualização e início dos juros.
-- Parâmetros de prescrição: aplicação, prazo e termo inicial das diferenças.
-- **Termo Inicial das Diferenças** em formato `MM/AAAA` ou `DD/MM/AAAA`, com cadeado para edição manual.
-- Dados do benefício devido: NB, espécie, tipo, DIB, DIP, RMI, transformação, adicional, percentual de desdobramento/cota e Data Final de Evolução.
-- **Benefício Baseado em Salário Mínimo**, com evolução atrelada ao salário mínimo vigente e RMI automática.
-- **Possui Abono Anual (13º)** para o benefício devido.
-- **Incluir 13º proporcional no ano final aberto**, opção desmarcada por padrão, utilizada para calcular o 13º proporcional até a Data Final quando o exercício civil ainda não está completo e não há DCB real.
-
-#### Guia 2 – Evolução Devida
-
-- Memória de cálculo do benefício devido.
-- Índices aplicados: `PRO RATA`, `INTEGRAL` e `PRO RATA/FALLBACK`.
-- Limites de teto e piso.
-- Evolução por salário mínimo quando aplicável.
-- Status: `NORMAL`, `PISO`, `TETO` e `SM`.
-- RMA final, resumo executivo e impressão.
-- A memória de evolução permanece focada na renda mensal, sem intercalar linhas de 13º.
-
-#### Guia 3 – Benefícios Recebidos
-
-- Cadastro de múltiplos benefícios recebidos, com NB, espécie, tipo, DIB, DIP, DCB, RMI, abono anual e evolução por salário mínimo individual.
-- **Tratamento da DIP** em três modos:
-  - iniciar compensação na DIP;
-  - acumular atrasados na competência da DIP;
-  - compensar desde a DIB.
-- Evolução individual por benefício recebido.
-- Botão **Calcular Todos** para processamento em lote.
-- Memória visual re-renderizada após cada recálculo, evitando exibição de dados antigos.
-- A memória da Guia 3 exibe somente a evolução mensal/reajustes do benefício recebido, sem linhas de 13º.
-
-#### Guia 4 – Diferenças
-
-- Grade contínua de competências mensais e competências de abono anual `13º/AAAA`.
-- Colunas dinâmicas: Competência, Benefício Devido, Benefícios Recebidos, Total Recebido, Diferença Devida e Observações.
-- **Modos de compensação**:
-  - limitar ao valor devido;
-  - permitir diferença negativa.
-- **Cálculo do Abono Anual (13º)** integrado à grade de diferenças.
-- O 13º é compensado em linha própria, sem misturar abono anual com mensalidades comuns.
-- Cálculo de avos com regra dos 15 dias de vigência no mês.
-- Base do 13º obtida pela mesma lógica da Guia 4, via `obterValorIntegral()`, garantindo consistência entre a competência exibida e a base do abono.
-- Correção do primeiro 13º em benefícios previdenciários comuns cuja memória de evolução contém apenas marcos de reajuste.
-- Regra do ano final aberto:
-  - anos intermediários geram 13º normalmente;
-  - ano final gera 13º se o mês final for dezembro;
-  - ano final gera 13º se a opção **Incluir 13º proporcional no ano final aberto** estiver marcada;
-  - ano final gera 13º se houver benefício recebido com `possuiAbono=true` e DCB real dentro do período apurado;
-  - DIP do benefício devido não é tratada como DCB;
-  - a linha `13º/AAAA` pode existir por causa de benefício recebido cessado, sem obrigar cálculo do 13º do benefício devido.
-- Cálculo individual por coluna na linha de 13º.
-- **Edição manual** do Benefício Devido e dos Benefícios Recebidos.
-- **Central de Alterações Manuais**, com:
-  - Editar;
-  - Motivo;
-  - Restaurar;
-  - Restaurar Todas.
-- Correção de colisão/recursão em função de relatórios que impedia a exibição da central de competências modificadas.
-- Visual discreto para linhas de 13º: competência em azul/negrito, sem estrela, sem faixa azul forte e sem bordas chamativas.
-- Sticky Header durante rolagem.
-- Auditoria de alterações e lista de competências modificadas.
-
-#### Guia 5 – Atualização (em construção)
-
-- Correção monetária e juros serão implementados em fase futura.
-
-#### Guia 6 – Acordo / Renúncia (em construção)
-
-- Parâmetros para acordo, renúncia e limites serão implementados em fase futura.
-
-#### Guia 7 – Relatórios
-
-- **Relatório Interno**: exibe alterações com classificação interna/externa.
-- **Relatório Externo**: exibe apenas justificativas autorizadas para relatório.
-- Pré-visualização em HTML.
-- Impressão via `window.print()` para geração de PDF nativo do navegador.
-- Ajustada colisão de nome de função para evitar recursão infinita com a central de competências modificadas da Guia 4.
+> **Aviso:** o sistema permanece em desenvolvimento. Os resultados devem ser conferidos por profissional habilitado antes de qualquer utilização processual, administrativa ou financeira.
 
 ---
 
-### Tecnologias Utilizadas
+## Princípio arquitetural
 
-- **HTML5** + **Tailwind CSS** via CDN – interface responsiva.
-- **CSS3** – estilos personalizados, sticky header, modais, impressão e marcações visuais.
-- **JavaScript puro (ES6)** – lógica de negócio, motor de evolução, Guia 4, persistência JSON e relatórios.
-
----
-
-### Estrutura de Arquivos
+O ContadJus adota a seguinte arquitetura:
 
 ```text
-/
-├── index.html                   # Página principal, guias e modais
-├── css/
-│   └── styles.css               # Estilos globais e específicos
-├── js/
-│   ├── core.js                  # Funções auxiliares, máscaras, parse, formatação e 13º
-│   ├── app.js                   # Navegação, eventos, sincronização e controle de SM
-│   ├── motor-evolucao.js        # Motor de cálculo previdenciário, índices e SM
-│   ├── beneficios-recebidos.js  # Gestão de benefícios recebidos e Guia 3
-│   ├── diferencas.js            # Diferenças, 13º, edição, auditoria e Guia 4
-│   ├── json.js                  # Exportação/importação JSON e compatibilidade
-│   └── relatorios.js            # Relatórios internos e externos
-├── data/
-│   └── indices.js               # Base de índices e vigências
-└── README.md                    # Documentação do projeto
+Motor genérico
++
+Encadeamento administrativo
+=
+Critério aplicável
+```
+
+O código não deve incorporar regras rígidas com base no nome de um manual, pacote ou caso. Diferentes critérios são representados por encadeamentos com índices e períodos próprios, interpretados pelos mesmos motores genéricos.
+
+Exemplos de práticas evitadas:
+
+```javascript
+calcularMC2022();
+calcularMC2026();
+```
+
+```javascript
+if (parametros.nome === 'MC 2026') {
+    // regra específica
+}
+```
+
+Os nomes dos encadeamentos servem para identificação e auditoria. A matemática depende dos índices, períodos e datas informados.
+
+---
+
+## Funcionalidades por guia
+
+### Guia 1: Entradas
+
+- dados processuais, autor, réu, CPF, vara e processo;
+- tipo de ação;
+- datas processuais e de atualização;
+- início dos juros;
+- parâmetros de prescrição;
+- termo inicial das diferenças, automático ou manual;
+- dados do benefício devido;
+- DIB e DIP;
+- RMI, transformação, cotas e adicionais;
+- benefício baseado em salário mínimo;
+- abono anual;
+- opção de 13º proporcional no ano final aberto;
+- exportação e importação do caso completo.
+
+### Guia 2: Evolução devida
+
+- evolução da renda mensal do benefício devido;
+- reajustes integrais e proporcionais;
+- aplicação de piso e teto;
+- evolução por salário mínimo, quando aplicável;
+- memória de cálculo e resumo executivo;
+- Renda Mensal Atualizada;
+- impressão pelo navegador.
+
+A memória da Guia 2 permanece focada na evolução mensal, sem intercalar linhas do 13º.
+
+### Guia 3: Benefícios recebidos
+
+- cadastro de múltiplos benefícios recebidos;
+- evolução independente por benefício;
+- DIB, DIP e DCB individuais;
+- RMI, abono anual e salário mínimo;
+- modos de tratamento da DIP;
+- cálculo individual ou em lote;
+- re-renderização da memória após recálculo.
+
+### Guia 4: Diferenças
+
+- grade contínua de competências mensais;
+- linhas próprias para `13º/AAAA`;
+- benefício devido e benefícios recebidos;
+- total recebido e diferença devida;
+- limitação ao valor devido ou permissão de diferença negativa;
+- cálculo do abono anual pela regra dos 15 dias;
+- edição manual de valores;
+- justificativas internas e externas;
+- restauração individual ou geral;
+- central de competências modificadas;
+- cabeçalho fixo durante a rolagem;
+- preparação das diferenças para a Guia 5.
+
+### Guia 5: Atualização
+
+A Guia 5 está funcional para correção monetária e juros determinísticos.
+
+#### Datas de referência
+
+- Data de Atualização;
+- Início dos Juros;
+- Observações.
+
+O campo **Início dos Juros** é genérico. Pode representar citação, vencimento, evento danoso ou outro marco definido no processo.
+
+#### Parâmetros
+
+- carregamento independente dos parâmetros de correção monetária;
+- pacote unificado de Juros e SELIC;
+- visualização dos índices, quantidades e intervalos;
+- cartões de status responsivos e ampliados;
+- nomes amigáveis dos indexadores;
+- compatibilidade com formatos antigos em JSON.
+
+#### Memória de atualização
+
+A tabela apresenta:
+
+1. Competência;
+2. Diferença Original;
+3. Índice ou Critério;
+4. Coeficiente;
+5. Valor Corrigido;
+6. % Juros antes da SELIC;
+7. Taxa Legal;
+8. % Juros até a atualização;
+9. Juros de Mora em reais.
+
+O resumo apresenta:
+
+- Total original;
+- Total corrigido;
+- Total dos Juros de Mora.
+
+#### Corte temporal
+
+Somente parcelas com competência igual ou anterior à Data de Atualização participam da memória e dos totais. As diferenças importadas permanecem preservadas, mas parcelas posteriores à data da conta são desconsideradas na atualização.
+
+### Guia 6: Acordo e renúncia
+
+Estrutura visual preparada. A implementação matemática e jurídica permanece planejada para fase posterior.
+
+### Guia 7: Relatórios
+
+- relatório interno de alterações;
+- relatório externo com justificativas autorizadas;
+- pré-visualização em HTML;
+- impressão e geração de PDF pelo navegador.
+
+---
+
+## Correção monetária
+
+O motor genérico de correção monetária está homologado.
+
+### Funcionamento
+
+- leitura de encadeamentos do tipo `correcao_monetaria`;
+- localização do período aplicável por competência;
+- utilização de fatores mensais;
+- multiplicação sucessiva dos fatores;
+- preservação do critério utilizado em cada parcela;
+- suporte ao índice `SEM_CORRECAO`;
+- erro explícito para competência sem período ou sem índice cadastrado.
+
+A correção utiliza fatores mensais, por exemplo:
+
+```javascript
+1.0061
+```
+
+Esse valor representa um fator, não uma taxa percentual direta.
+
+---
+
+## Juros de mora determinísticos
+
+Os seguintes critérios estão implementados e homologados:
+
+```text
+SEM_JUROS
+JUROS_05_AM
+JUROS_1_AM
+JUROS_2_AA_EC136
+```
+
+### Regras matemáticas
+
+- juros simples;
+- incidência sobre o valor corrigido da parcela;
+- exclusão do mês de início;
+- inclusão do mês da conta;
+- contagem mensal, sem proporcionalidade diária nesta fase;
+- repetição do percentual para parcelas vencidas antes ou na competência do início da mora;
+- redução mensal do percentual para parcelas posteriores;
+- erro explícito para lacunas no encadeamento.
+
+Para cada parcela:
+
+```text
+Início efetivo = maior entre:
+- competência da parcela;
+- Início dos Juros.
+```
+
+O cálculo monetário utiliza:
+
+```text
+Juros de Mora = Valor Corrigido × Percentual Acumulado ÷ 100
+```
+
+### Taxas homologadas
+
+```text
+SEM_JUROS        = 0% ao mês
+JUROS_05_AM      = 0,5% ao mês
+JUROS_1_AM       = 1% ao mês
+JUROS_2_AA_EC136 = 2% ao ano ÷ 12, de forma linear
+```
+
+A taxa de 2% ao ano não utiliza equivalência composta.
+
+### Exemplo de contagem
+
+Com início dos juros em `01/2020` e conta em `12/2021`:
+
+```text
+12/2019 → 23 meses → 11,5% a 0,5% ao mês
+01/2020 → 23 meses → 11,5%
+02/2020 → 22 meses → 11,0%
+11/2021 →  1 mês   →  0,5%
+12/2021 →  0 meses →  0,0%
 ```
 
 ---
 
-### Como Utilizar
+## Juros e SELIC ainda não implementados
 
-1. Abra o arquivo `index.html` em navegador moderno.
-2. Preencha os dados na **Guia 1 – Entradas**.
-3. Clique em **Calcular Evolução** para gerar a evolução do benefício devido.
-4. Cadastre benefícios recebidos na **Guia 3**.
-5. Calcule individualmente cada benefício recebido ou use **Calcular Todos**.
-6. Acesse a **Guia 4 – Diferenças** para visualizar:
-   - diferenças mensais;
-   - 13º devido;
-   - 13º recebido;
-   - compensações;
-   - edições manuais;
-   - justificativas.
-7. Use a **Guia 7 – Relatórios** para gerar relatório interno ou externo.
-8. Exporte o caso em JSON para preservação e posterior importação.
+Os registros e a infraestrutura existem, mas os seguintes motores permanecem pendentes:
+
+```text
+JUROS_POUPANCA
+TAXA_LEGAL
+TAXA_LEGAL_PREVIDENCIARIA
+SELIC
+```
+
+Também permanecem pendentes:
+
+- não cumulação entre juros e SELIC;
+- valor da SELIC por parcela;
+- total da SELIC;
+- integração da Taxa Legal;
+- total geral da condenação;
+- integração completa com relatórios.
+
+A coluna **Taxa Legal** já existe na memória e permanece com `-` enquanto o motor correspondente não estiver implementado.
+
+---
+
+## Encadeamentos administrativos
+
+O modal administrativo é aberto por:
+
+```text
+Ctrl + Shift + E
+```
+
+Tipos principais:
+
+```text
+Correção Monetária
+Juros e SELIC
+```
+
+O pacote de Juros e SELIC possui tabelas internas independentes:
+
+```text
+Encadeamento de Juros de Mora
+Encadeamento SELIC
+```
+
+### Combinações permitidas
+
+- somente Juros;
+- somente SELIC;
+- Juros e SELIC.
+
+Um pacote totalmente vazio é bloqueado.
+
+### Estrutura do pacote
+
+```json
+{
+  "tipoArquivo": "parametros_juros_selic",
+  "tipoParametro": "juros_selic",
+  "versao": "1.0",
+  "nome": "NOME DO PACOTE",
+  "descricao": "",
+  "dataCriacao": "DD/MM/AAAA",
+  "juros": {
+    "tipoParametro": "juros_mora",
+    "indicesUtilizados": [],
+    "periodos": []
+  },
+  "selic": {
+    "tipoParametro": "selic",
+    "indicesUtilizados": [],
+    "periodos": []
+  }
+}
+```
+
+### Variáveis globais
+
+```javascript
+window.parametrosCorrecaoAtual
+window.parametrosJurosAtual
+window.parametrosSelicAtual
+```
+
+A interface e o arquivo administrativo são unificados, mas Juros e SELIC permanecem separados internamente.
 
 ---
 
-### Regras de Negócio Implementadas
+## Formatos de arquivo
 
-#### Proporcionalidade Mensal
+O conteúdo dos arquivos continua sendo JSON, mesmo quando a extensão é personalizada.
 
-- A Guia 4 utiliza mês comercial de 30 dias para cálculo proporcional das competências mensais.
-- Dia 31 é tratado internamente como dia 30, preservando a exibição original.
-- A DIP do benefício devido atua como marco financeiro final, encerrando as diferenças na competência anterior à implantação quando aplicável.
-- A DIP do benefício devido não é DCB e não gera automaticamente 13º proporcional.
+### Correção monetária
 
-#### Evolução por Salário Mínimo
+```text
+CORRE-NOME.corr
+```
 
-- Benefícios marcados como baseados em salário mínimo evoluem diretamente pela tabela de salários mínimos.
-- A RMI é ajustada automaticamente ao salário mínimo da DIB quando aplicável.
-- A Guia 4 utiliza os valores corretos de salário mínimo na apuração das diferenças.
+### Juros e SELIC
 
-#### Abono Anual (13º)
+```text
+JUROS-NOME.jur
+```
 
-- O 13º é calculado como camada derivada, sem ser incorporado ao motor de evolução.
-- A contagem de avos usa dias corridos reais do calendário.
-- Um mês conta como avo se houver pelo menos 15 dias de vigência.
-- Fevereiro respeita ano bissexto quando aplicável.
-- DIB e DCB são consideradas para a contagem dos avos.
-- DIP não interfere na contagem dos avos.
-- A base do 13º corresponde à última competência ativa do exercício.
-- Para memórias previdenciárias resumidas, a base é obtida por carry-over com `obterValorIntegral()`.
-- O primeiro 13º de benefícios previdenciários comuns é calculado corretamente mesmo quando a memória de evolução começa apenas no primeiro reajuste.
-- No ano final aberto, a geração e o cálculo do 13º obedecem às regras específicas da opção **Incluir 13º proporcional no ano final aberto** e das DCBs reais dos benefícios recebidos.
+### Caso completo
 
-#### Edições Manuais e Auditoria
+```text
+DADOS-AUTOR-IDENTIFICADOR.contadjus
+```
 
-- Qualquer célula editada na Guia 4 é registrada em `dadosDiferencas.celulasEditadas`.
-- A central de alterações lista as competências modificadas.
-- É possível editar, justificar, restaurar individualmente ou restaurar todas as competências.
-- Justificativas podem ser marcadas para inclusão no relatório externo.
+Exemplo:
 
-#### Persistência JSON
+```text
+DADOS-JOAO-DA-SILVA-001234.contadjus
+```
 
-- Exportação e importação completas do caso.
-- Compatibilidade com versões `3.1`, `3.2` e `3.3`.
-- Campo `incluir13FinalAberto` persistido dentro de `entradas.beneficioDevido`.
-- Fallbacks aplicados para arquivos antigos.
-- Conversão automática de justificativas antigas em string para objeto estruturado.
+### Identificador do processo
 
----
+Para o processo:
+
+```text
+0001234-56.2022.4.05.8300
+```
+
+é utilizado o primeiro bloco antes do hífen, considerando seus últimos seis algarismos:
+
+```text
+0001234 → 001234
+```
 
 ### Compatibilidade
 
-- **Navegadores:** Chrome, Edge, Firefox e Safari em versões recentes.
-- **JSON:** versões `3.1`, `3.2` e `3.3` suportadas.
-- **Arquivos antigos:** compatibilidade retroativa com fallback para campos novos.
-- **Renderização visual:** linhas de 13º ajustadas para aparência discreta e consistente entre Chrome e Edge.
+Continuam aceitos:
+
+```text
+.json
+.corr
+.jur
+.contadjus
+```
+
+O reconhecimento ocorre pelo conteúdo interno, por meio de campos como:
+
+```text
+tipoArquivo
+tipoParametro
+versao
+periodos
+```
 
 ---
 
-### Histórico da Fase 1.7D2
+## Persistência do caso
 
-A Fase 1.7D2 implementou e homologou funcionalmente o Abono Anual (13º), incluindo:
+O caso completo utiliza a versão `3.3` e preserva:
 
-- criação de linhas `13º/AAAA` na Guia 4;
-- cálculo de avos pela regra dos 15 dias;
-- correção do primeiro 13º em benefícios previdenciários comuns;
-- suporte a benefícios atrelados ao salário mínimo;
-- remoção do 13º da memória da Guia 3;
-- re-renderização da memória da Guia 3 após recálculo;
-- regra de ano final aberto;
-- opção `incluir13FinalAberto`;
-- persistência da opção em JSON;
-- tratamento de DCB de benefícios recebidos no ano final;
-- prevenção de uso indevido da DIP do benefício devido como DCB;
-- correção de recursão que causava `Maximum call stack size exceeded`;
-- restauração da central de competências modificadas;
-- ajuste visual discreto das linhas de 13º.
+- entradas;
+- benefícios recebidos;
+- diferenças e alterações manuais;
+- parâmetros de atualização;
+- acordo e renúncia;
+- parâmetros de correção, Juros e SELIC.
 
----
+Estrutura dos parâmetros:
 
-### Roadmap
+```json
+{
+  "parametros": {
+    "correcao": {},
+    "juros": {},
+    "selic": {}
+  }
+}
+```
 
-| Fase | Descrição | Status |
-|---|---|---|
-| 1.7D2 | Abono Anual (13º), avos, Guia 4, ano final aberto e integração com diferenças | Concluída / homologada |
-| 1.8 | Atualização monetária e juros – Guia 5 | Próxima fase |
-| 1.9 | Acordo e Renúncia – Guia 6 | Planejada |
-| 2.0 | Relatórios avançados, PDF, assinatura digital e exportações | Planejada |
+A importação suporta as versões:
 
----
+```text
+3.1
+3.2
+3.3
+```
 
-### Manutenção e Extensibilidade
-
-- O motor de evolução (`motor-evolucao.js`) permanece isolado e sem lógica de abono anual.
-- O cálculo do 13º está concentrado em funções auxiliares e na Guia 4.
-- A Guia 3 permanece dedicada à evolução dos benefícios recebidos.
-- A Guia 4 concentra diferenças, compensações, 13º, edição manual e auditoria.
-- A estrutura modular por arquivo facilita correções pontuais e futuras fases.
+Casos antigos continuam recebendo valores padrão para campos introduzidos posteriormente.
 
 ---
 
-### Contribuição
+## Estrutura principal do projeto
 
-Este é um sistema interno. Para sugestões, reporte de bugs ou solicitações de melhoria, entre em contato com a equipe de desenvolvimento.
+```text
+/
+├── index.html
+├── README.md
+├── css/
+│   ├── styles.css
+│   └── auth.css
+├── data/
+│   ├── indices.js
+│   ├── indexadores.js
+│   └── indexadores-juros.js
+└── js/
+    ├── app.js
+    ├── auth.js
+    ├── beneficios-recebidos.js
+    ├── core.js
+    ├── diferencas.js
+    ├── json.js
+    ├── motor-evolucao.js
+    ├── relatorios.js
+    ├── admin-encadeamentos.js
+    └── supabase.js
+```
+
+### Responsabilidades principais
+
+- `index.html`: estrutura das guias, tabelas, formulários e modais;
+- `css/styles.css`: estilos gerais, tabelas, impressão e elementos visuais;
+- `css/auth.css`: interface de autenticação;
+- `data/indices.js`: bases previdenciárias e vigências;
+- `data/indexadores.js`: catálogo e bases de correção monetária;
+- `data/indexadores-juros.js`: catálogo e bases de Juros e SELIC;
+- `js/core.js`: máscaras, datas, valores e funções compartilhadas;
+- `js/motor-evolucao.js`: evolução do benefício devido;
+- `js/beneficios-recebidos.js`: Guia 3;
+- `js/diferencas.js`: Guia 4, 13º, compensações e auditoria;
+- `js/admin-encadeamentos.js`: encadeamentos, Guia 5, correção e juros;
+- `js/json.js`: persistência e compatibilidade dos casos;
+- `js/relatorios.js`: relatórios internos e externos;
+- `js/app.js`: navegação, eventos e integração da interface;
+- `js/supabase.js` e `js/auth.js`: configuração e autenticação.
 
 ---
 
-### Licença
+## Como utilizar
 
-Uso exclusivo para fins profissionais no âmbito de cálculos judiciais e administrativos previdenciários. Proibida a redistribuição sem autorização.
+1. Acesse o ContadJus em navegador moderno.
+2. Efetue a autenticação.
+3. Preencha a Guia 1.
+4. Calcule a evolução do benefício devido.
+5. Cadastre e calcule os benefícios recebidos na Guia 3.
+6. Confira as diferenças na Guia 4.
+7. Se necessário, edite, justifique ou restaure competências.
+8. Na Guia 5, informe a Data de Atualização e o Início dos Juros.
+9. Carregue os parâmetros de correção.
+10. Carregue os parâmetros de Juros e SELIC, quando aplicável.
+11. Importe as diferenças da Guia 4.
+12. Clique em **Calcular Atualização**.
+13. Confira coeficientes, percentuais, valores e totais.
+14. Exporte o caso completo para preservação e futura importação.
 
-**Desenvolvido por:** Equipe de Desenvolvimento – Cálculo Previdenciário
+---
+
+## Regras de negócio relevantes
+
+### Proporcionalidade mensal
+
+- mês comercial de 30 dias nas competências mensais;
+- dia 31 tratado internamente como dia 30, preservando a exibição;
+- DIP do benefício devido como marco financeiro, quando aplicável;
+- DIP não tratada como DCB.
+
+### Abono anual
+
+- camada derivada da evolução mensal;
+- linha própria na Guia 4;
+- regra dos 15 dias para contagem de avos;
+- calendário real, inclusive anos bissextos;
+- DIB e DCB consideradas na contagem;
+- DIP não interfere nos avos;
+- base obtida da última competência ativa do exercício;
+- suporte ao ano final aberto e a DCB real de benefício recebido.
+
+### Edições manuais
+
+- registro por competência e coluna;
+- justificativa estruturada;
+- indicação de inclusão no relatório externo;
+- restauração individual ou global;
+- compatibilidade com justificativas antigas em texto.
+
+### Atualização
+
+- correção por fatores mensais;
+- juros determinísticos simples;
+- base dos juros no valor corrigido;
+- corte pela Data de Atualização;
+- erro para lacunas de período;
+- distinção entre ausência de período e `SEM_JUROS`.
+
+---
+
+## Tecnologias
+
+- HTML5;
+- Tailwind CSS via CDN;
+- CSS3;
+- JavaScript puro;
+- Supabase Auth;
+- impressão nativa do navegador.
+
+---
+
+## Compatibilidade
+
+### Navegadores
+
+- Microsoft Edge recente;
+- Google Chrome recente;
+- Mozilla Firefox recente;
+- Safari recente.
+
+### Arquivos
+
+- casos 3.1, 3.2 e 3.3;
+- parâmetros administrativos antigos em `.json`;
+- correção em `.corr` ou `.json`;
+- Juros e SELIC em `.jur` ou `.json`;
+- casos em `.contadjus` ou `.json`.
+
+---
+
+## Marcos homologados
+
+```text
+Fase 1.7D2   Abono anual, Guia 4 e ano final aberto       HOMOLOGADA
+Fase 1.8E    Motor genérico de correção monetária         HOMOLOGADA
+Fase 1.8F-A  Infraestrutura de Juros e SELIC              HOMOLOGADA
+Fase 1.8F-A2 Pacote unificado de Juros e SELIC            HOMOLOGADA
+Fase 1.8F-B1 Motor de juros determinísticos               HOMOLOGADA
+Fase 1.8F-B2 Exibição auditável dos juros                 HOMOLOGADA
+Fase 1.8F-B3 Corte temporal pela data da conta            HOMOLOGADA
+Fase 1.8F-B4 Nomes, extensões e status detalhados         HOMOLOGADA
+```
+
+---
+
+## Roadmap
+
+### Próximas fases da Guia 5
+
+- juros da Poupança;
+- SELIC;
+- Taxa Legal;
+- Taxa Legal Previdenciária;
+- transições e não cumulação;
+- total da SELIC;
+- total geral;
+- integração com relatórios.
+
+### Outras áreas
+
+- implementação da Guia 6;
+- relatórios avançados;
+- parâmetros de exibição das tabelas;
+- aprimoramentos de impressão e exportação;
+- expansão futura para ações condenatórias e tributárias.
+
+---
+
+## Manutenção e extensibilidade
+
+- preservar a separação entre motor e encadeamento;
+- evitar regras baseadas no nome do pacote;
+- manter compatibilidade com arquivos antigos;
+- alterar apenas os arquivos necessários em cada fase;
+- validar JavaScript antes da publicação;
+- executar testes de regressão da correção monetária;
+- homologar cada novo motor com memória externa confiável;
+- manter precisão interna e arredondar apenas na exibição ou no ponto definido pela regra.
+
+---
+
+## Uso e responsabilidade
+
+O ContadJus é uma ferramenta profissional de apoio. O uso dos resultados exige conferência dos parâmetros, das datas, dos índices, das regras jurídicas aplicáveis e da memória final.
+
+O sistema não substitui a análise do processo, da decisão judicial, do título executivo ou da legislação aplicável.
+
+---
+
+## Licença
+
+Uso profissional interno no âmbito de cálculos judiciais e administrativos. A redistribuição depende de autorização do responsável pelo projeto.
