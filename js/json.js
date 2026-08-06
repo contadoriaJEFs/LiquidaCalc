@@ -44,7 +44,7 @@ function coletarDadosCaso() {
                 dipDevido: document.getElementById('dipDevido').value,
                 possuiAbono: document.getElementById('possuiAbonoDevido').checked,
                 baseadoSalarioMinimo: document.getElementById('baseadoSalarioMinimoDevido').checked,
-                incluir13FinalAberto: document.getElementById('incluir13FinalAberto').checked // NOVO
+                incluir13FinalAberto: document.getElementById('incluir13FinalAberto').checked
             }
         },
         evolucaoDevida: {},
@@ -75,6 +75,11 @@ function coletarDadosCaso() {
                 dataReferencia: document.getElementById('dataReferenciaRenuncia').value,
                 observacoes: document.getElementById('obsRenuncia').value
             }
+        },
+        parametros: {
+            correcao: window.parametrosCorrecaoAtual || null,
+            juros: window.parametrosJurosAtual || null,
+            selic: window.parametrosSelicAtual || null
         }
     };
     return dados;
@@ -84,23 +89,33 @@ function coletarDadosCaso() {
 // AUXILIARES PARA NOME DO ARQUIVO JSON
 // =====================================================================
 
-function sanitizarAutor(nome) {
-    if (!nome || nome.trim() === '') return 'SEM_AUTOR';
-    const semAcentos = nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    let sanitizado = semAcentos
+function sanitizarNomeArquivo(nome) {
+    if (!nome || nome.trim() === '') return 'SEM-AUTOR';
+    var semAcentos = nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    // Substitui apóstrofos e similares por hífen
+    var comHifens = semAcentos.replace(/['’`´]/g, '-');
+    var sanitizado = comHifens
         .toUpperCase()
-        .replace(/\s+/g, '_')
-        .replace(/[^A-Z0-9_]/g, '');
-    sanitizado = sanitizado.replace(/_+/g, '_');
-    sanitizado = sanitizado.replace(/^_|_$/g, '');
-    return sanitizado || 'SEM_AUTOR';
+        .replace(/\s+/g, '-')
+        .replace(/[^A-Z0-9-]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+    return sanitizado || 'SEM-AUTOR';
 }
 
-function extrairSeisPrimeirosNumeros(processo) {
-    if (!processo) return 'SEM_PROCESSO';
-    const numeros = processo.replace(/\D/g, '');
-    if (numeros.length === 0) return 'SEM_PROCESSO';
-    return numeros.substring(0, 6);
+function extrairIdentificadorProcesso(processo) {
+    if (!processo) return 'SEM-PROCESSO';
+    // Primeiro bloco antes do primeiro hífen
+    var primeiroBloco = processo.split('-')[0] || '';
+    var numeros = primeiroBloco.replace(/\D/g, '');
+    if (numeros.length === 0) return 'SEM-PROCESSO';
+    // Últimos 6 dígitos
+    var ultimosSeis = numeros.slice(-6);
+    // Completar com zeros à esquerda se necessário
+    while (ultimosSeis.length < 6) {
+        ultimosSeis = '0' + ultimosSeis;
+    }
+    return ultimosSeis;
 }
 
 function formatarDataHoraArquivo() {
@@ -128,11 +143,10 @@ function exportarCaso() {
     const autor = document.getElementById('autor')?.value?.trim() || '';
     const processo = document.getElementById('processo')?.value?.trim() || '';
 
-    const autorSanitizado = sanitizarAutor(autor);
-    const numeroProcesso = extrairSeisPrimeirosNumeros(processo);
-    const dataHora = formatarDataHoraArquivo();
+    const autorSanitizado = sanitizarNomeArquivo(autor);
+    const identificador = extrairIdentificadorProcesso(processo);
 
-    const nomeArquivo = `calc_${autorSanitizado}_${numeroProcesso}_${dataHora}.json`;
+    const nomeArquivo = `DADOS-${autorSanitizado}-${identificador}.contadjus`;
 
     link.href = url;
     link.download = nomeArquivo;
@@ -263,7 +277,6 @@ function importarCaso(event) {
                 }
             }
 
-            // NOVO: Restaurar incluir13FinalAberto
             const incluir13FinalAberto = document.getElementById('incluir13FinalAberto');
             if (incluir13FinalAberto) {
                 incluir13FinalAberto.checked = (bene.incluir13FinalAberto !== undefined) ? bene.incluir13FinalAberto : false;
@@ -318,6 +331,98 @@ function importarCaso(event) {
                 montarTabelaDiferencas();
             }
 
+            // =============================================================
+            // Restauração dos parâmetros (Fase 1.8F-A2)
+            // =============================================================
+            const params = dados.parametros || {};
+
+            // Atribuição direta (sempre sobrescreve com o que está no arquivo)
+            window.parametrosCorrecaoAtual = params.correcao || null;
+            window.parametrosJurosAtual = params.juros || null;
+            window.parametrosSelicAtual = params.selic || null;
+
+            // Atualizar status visuais
+            // Correção
+            const statusCorrecao = document.getElementById('statusCorrecao');
+            if (statusCorrecao) {
+                if (window.parametrosCorrecaoAtual) {
+                    const obj = window.parametrosCorrecaoAtual;
+                    if (typeof adminAtualizarStatusDetalhado === 'function') {
+                        adminAtualizarStatusDetalhado('correcao_monetaria', obj, '✅ Correção restaurada.');
+                    } else {
+                        // Fallback: usa classes flexíveis
+                        statusCorrecao.innerHTML = '';
+                        statusCorrecao.className = 'flex-1 min-w-0 text-sm p-3 rounded-md bg-green-100 text-green-700';
+                        let msg = '✅ Correção restaurada: ' + obj.nome;
+                        msg += ' (' + (obj.periodos ? obj.periodos.length : 0) + ' períodos)';
+                        const p = document.createElement('p');
+                        p.textContent = msg;
+                        statusCorrecao.appendChild(p);
+                    }
+                } else {
+                    statusCorrecao.innerHTML = '';
+                    statusCorrecao.className = 'flex-1 min-w-0 text-sm p-3 rounded-md bg-slate-100 text-slate-600';
+                    const p = document.createElement('p');
+                    p.textContent = 'Nenhum arquivo carregado.';
+                    statusCorrecao.appendChild(p);
+                }
+            }
+
+            // Juros e SELIC (status unificado)
+            const statusJurosSelic = document.getElementById('statusJurosSelic');
+            if (statusJurosSelic) {
+                if (window.parametrosJurosAtual || window.parametrosSelicAtual) {
+                    var pacote = {
+                        nome: '',
+                        descricao: '',
+                        juros: window.parametrosJurosAtual,
+                        selic: window.parametrosSelicAtual
+                    };
+                    if (window.parametrosJurosAtual) {
+                        pacote.nome = window.parametrosJurosAtual.nomePacote || window.parametrosJurosAtual.nome || 'Juros';
+                        pacote.descricao = window.parametrosJurosAtual.descricaoPacote || window.parametrosJurosAtual.descricao || '';
+                    } else if (window.parametrosSelicAtual) {
+                        pacote.nome = window.parametrosSelicAtual.nomePacote || window.parametrosSelicAtual.nome || 'SELIC';
+                        pacote.descricao = window.parametrosSelicAtual.descricaoPacote || window.parametrosSelicAtual.descricao || '';
+                    }
+                    if (typeof adminAtualizarStatusDetalhado === 'function') {
+                        adminAtualizarStatusDetalhado('juros_selic', pacote, '✅ Parâmetros restaurados.');
+                    } else {
+                        statusJurosSelic.innerHTML = '';
+                        statusJurosSelic.className = 'flex-1 min-w-0 text-sm p-3 rounded-md bg-green-100 text-green-700';
+                        let msg = '✅ Parâmetros restaurados:\n';
+                        if (window.parametrosJurosAtual) {
+                            const j = window.parametrosJurosAtual;
+                            msg += 'Juros: ' + (j.nomePacote || j.nome || 'sem nome') +
+                                   ' (' + (j.periodos ? j.periodos.length : 0) + ' períodos)\n';
+                        } else {
+                            msg += 'Juros: não definido\n';
+                        }
+                        if (window.parametrosSelicAtual) {
+                            const s = window.parametrosSelicAtual;
+                            msg += 'SELIC: ' + (s.nomePacote || s.nome || 'sem nome') +
+                                   ' (' + (s.periodos ? s.periodos.length : 0) + ' períodos)';
+                        } else {
+                            msg += 'SELIC: não definido';
+                        }
+                        const p = document.createElement('p');
+                        p.textContent = msg;
+                        statusJurosSelic.appendChild(p);
+                    }
+                } else {
+                    statusJurosSelic.innerHTML = '';
+                    statusJurosSelic.className = 'flex-1 min-w-0 text-sm p-3 rounded-md bg-slate-100 text-slate-600';
+                    const p = document.createElement('p');
+                    p.textContent = 'Nenhum arquivo carregado.';
+                    statusJurosSelic.appendChild(p);
+                }
+            }
+
+            // Atualizar botão de cálculo (se necessário)
+            if (typeof atualizarBotoesAtualizacao === 'function') {
+                atualizarBotoesAtualizacao();
+            }
+
             if (!termoManual) calcularTermoInicial();
 
             alert('Dados do caso importados com sucesso!');
@@ -347,5 +452,29 @@ function novoCaso() {
         if (cbSM) cbSM.checked = false;
         const cbIncluir13 = document.getElementById('incluir13FinalAberto');
         if (cbIncluir13) cbIncluir13.checked = false;
+
+        // Limpeza dos parâmetros globais
+        window.parametrosCorrecaoAtual = null;
+        window.parametrosJurosAtual = null;
+        window.parametrosSelicAtual = null;
+
+        // Limpeza dos status com classes flexíveis
+        const statusCorrecao = document.getElementById('statusCorrecao');
+        if (statusCorrecao) {
+            statusCorrecao.innerHTML = '';
+            statusCorrecao.className = 'flex-1 min-w-0 text-sm p-3 rounded-md bg-slate-100 text-slate-600';
+            const p = document.createElement('p');
+            p.textContent = 'Nenhum arquivo carregado.';
+            statusCorrecao.appendChild(p);
+        }
+
+        const statusJurosSelic = document.getElementById('statusJurosSelic');
+        if (statusJurosSelic) {
+            statusJurosSelic.innerHTML = '';
+            statusJurosSelic.className = 'flex-1 min-w-0 text-sm p-3 rounded-md bg-slate-100 text-slate-600';
+            const p = document.createElement('p');
+            p.textContent = 'Nenhum arquivo carregado.';
+            statusJurosSelic.appendChild(p);
+        }
     }
 }

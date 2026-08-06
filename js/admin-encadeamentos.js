@@ -3,16 +3,27 @@
 // =====================================================================
 // Inclui:
 // - Admin de parâmetros (CTRL+SHIFT+E)
-// - Carregamento de JSON de correção/juros na Guia 5
+// - Carregamento de JSON de correção/juros/SELIC na Guia 5
 // - Importação de diferenças da Guia 4
 // - Motor de correção monetária (cálculo e exibição)
 // =====================================================================
 
-window.parametrosCorrecaoAtual = null;
-window.parametrosJurosAtual = null;
-window.parametrosSelicAtual = null;
-window.diferencasAtualizacaoAtual = null;
-window.resultadosAtualizacao = null;
+// Inicialização segura das variáveis globais
+if (window.parametrosCorrecaoAtual === undefined) {
+    window.parametrosCorrecaoAtual = null;
+}
+if (window.parametrosJurosAtual === undefined) {
+    window.parametrosJurosAtual = null;
+}
+if (window.parametrosSelicAtual === undefined) {
+    window.parametrosSelicAtual = null;
+}
+if (window.diferencasAtualizacaoAtual === undefined) {
+    window.diferencasAtualizacaoAtual = null;
+}
+if (window.resultadosAtualizacao === undefined) {
+    window.resultadosAtualizacao = null;
+}
 
 // =====================================================================
 // AUXILIARES
@@ -44,28 +55,28 @@ function adminParseValorBrasileiro(texto) {
     return parseFloat(limpo) || 0;
 }
 
-function adminSanitizarNome(nome) {
-    if (!nome) return 'ENCADEAMENTO_SEM_NOME';
+function adminSanitizarNomeArquivo(nome) {
+    if (!nome || nome.trim() === '') return 'SEM-NOME';
     var semAcentos = nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    var sanitizado = semAcentos
+    // Substitui apóstrofos e similares por hífen
+    var comHifens = semAcentos.replace(/['’`´]/g, '-');
+    var sanitizado = comHifens
         .toUpperCase()
-        .replace(/\s+/g, '_')
-        .replace(/[^A-Z0-9_]/g, '');
-    sanitizado = sanitizado.replace(/_+/g, '_');
-    sanitizado = sanitizado.replace(/^_|_$/g, '');
-    return sanitizado || 'ENCADEAMENTO_SEM_NOME';
+        .replace(/\s+/g, '-')
+        .replace(/[^A-Z0-9-]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+    return sanitizado || 'SEM-NOME';
 }
 
 function adminGerarNomeArquivo(tipo, nome) {
-    var nomeSanitizado = adminSanitizarNome(nome);
-    var tipoMap = {
-        'correcao_monetaria': 'correcao_monetaria',
-        'juros_mora': 'juros_mora',
-        'selic': 'selic',
-        'taxa_legal': 'taxa_legal'
-    };
-    var prefixo = tipoMap[tipo] || 'parametro';
-    return 'parametros_' + prefixo + '_' + nomeSanitizado + '.json';
+    var nomeSanitizado = adminSanitizarNomeArquivo(nome);
+    if (tipo === 'correcao_monetaria') {
+        return 'CORRE-' + nomeSanitizado + '.corr';
+    } else if (tipo === 'juros_selic') {
+        return 'JUROS-' + nomeSanitizado + '.jur';
+    }
+    return 'parametros_' + tipo + '_' + nomeSanitizado + '.json';
 }
 
 function adminDataAtualFormatada() {
@@ -77,33 +88,50 @@ function adminDataAtualFormatada() {
 }
 
 // =====================================================================
+// FUNÇÕES AUXILIARES PARA CATÁLOGO/BASE POR TIPO
+// =====================================================================
+
+function adminObterCatalogoPorTipo(tipo) {
+    if (tipo === 'correcao_monetaria') {
+        return window.CATALOGO_INDEXADORES_ATUALIZACAO || {};
+    } else if (tipo === 'juros_mora' || tipo === 'selic') {
+        return window.CATALOGO_INDEXADORES_JUROS || {};
+    }
+    return {};
+}
+
+function adminObterBasePorTipo(tipo) {
+    if (tipo === 'correcao_monetaria') {
+        return window.BASE_INDEXADORES_ATUALIZACAO || {};
+    } else if (tipo === 'juros_mora' || tipo === 'selic') {
+        return window.BASE_INDEXADORES_JUROS || {};
+    }
+    return {};
+}
+
+// =====================================================================
 // FUNÇÕES AUXILIARES PARA VERIFICAÇÃO DE ÍNDICES
 // =====================================================================
 
-function adminIndiceExisteNaBase(codigo) {
-    if (!window.INDEXADORES_ATUALIZACAO) return false;
-    return !!window.INDEXADORES_ATUALIZACAO[codigo];
+function adminIndiceExisteNaBase(codigo, tipo) {
+    var catalogo = adminObterCatalogoPorTipo(tipo);
+    return !!catalogo[codigo];
 }
 
-function adminIndiceCompativelComTipo(codigo, tipoParametro) {
-    if (!window.INDEXADORES_ATUALIZACAO) return false;
-    var item = window.INDEXADORES_ATUALIZACAO[codigo];
+function adminIndiceCompativelComTipo(codigo, tipo) {
+    var catalogo = adminObterCatalogoPorTipo(tipo);
+    var item = catalogo[codigo];
     if (!item) return false;
-    return item.tipo === tipoParametro;
+    return item.tipo === tipo;
 }
 
-function adminObterIndicesDisponiveisPorTipo(tipoParametro) {
-    if (!window.INDEXADORES_ATUALIZACAO) {
-        return [];
-    }
-
+function adminObterIndicesDisponiveisPorTipo(tipo) {
+    var catalogo = adminObterCatalogoPorTipo(tipo);
     var resultados = [];
-    var base = window.INDEXADORES_ATUALIZACAO;
-
-    for (var chave in base) {
-        if (base.hasOwnProperty(chave)) {
-            var item = base[chave];
-            if (item.tipo === tipoParametro) {
+    for (var chave in catalogo) {
+        if (catalogo.hasOwnProperty(chave)) {
+            var item = catalogo[chave];
+            if (item.tipo === tipo) {
                 resultados.push({
                     codigo: chave,
                     nome: item.nome || chave,
@@ -112,11 +140,9 @@ function adminObterIndicesDisponiveisPorTipo(tipoParametro) {
             }
         }
     }
-
     resultados.sort(function(a, b) {
         return a.nome.localeCompare(b.nome);
     });
-
     return resultados;
 }
 
@@ -159,9 +185,7 @@ function criarModalAdmin() {
                 <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Tipo do parâmetro</label>
                 <select id="adminTipoParametro" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                     <option value="correcao_monetaria">Correção Monetária</option>
-                    <option value="juros_mora">Juros de Mora</option>
-                    <option value="selic" disabled>SELIC (futuro)</option>
-                    <option value="taxa_legal" disabled>Taxa Legal (futuro)</option>
+                    <option value="juros_selic">Juros e SELIC</option>
                 </select>
             </div>
             <div>
@@ -175,10 +199,11 @@ function criarModalAdmin() {
             <textarea id="adminDescricao" rows="2" placeholder="Breve descrição do encadeamento..." class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"></textarea>
         </div>
 
-        <div class="mb-4">
+        <!-- SEÇÃO CORREÇÃO MONETÁRIA -->
+        <div id="adminSeccaoCorrecao" class="mb-4">
             <div class="flex justify-between items-center mb-2">
-                <h4 class="text-sm font-bold text-slate-700 uppercase tracking-wide">Períodos</h4>
-                <button type="button" id="adminAdicionarLinha" class="px-3 py-1 bg-emerald-600 text-white text-xs rounded hover:bg-emerald-700 transition">+ Adicionar Linha</button>
+                <h4 class="text-sm font-bold text-slate-700 uppercase tracking-wide">Encadeamento de Correção Monetária</h4>
+                <button type="button" id="adminAdicionarLinhaCorrecao" class="px-3 py-1 bg-emerald-600 text-white text-xs rounded hover:bg-emerald-700 transition">+ Adicionar Linha</button>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm border-collapse">
@@ -190,20 +215,66 @@ function criarModalAdmin() {
                             <th class="p-2 text-center">Ação</th>
                         </tr>
                     </thead>
-                    <tbody id="adminTabelaPeriodos">
+                    <tbody id="adminTabelaPeriodosCorrecao">
                     </tbody>
                 </table>
             </div>
         </div>
 
+        <!-- SEÇÃO JUROS E SELIC -->
+        <div id="adminSeccaoJurosSelic" class="mb-4" style="display:none;">
+            <!-- Juros -->
+            <div class="mb-6">
+                <div class="flex justify-between items-center mb-2">
+                    <h4 class="text-sm font-bold text-slate-700 uppercase tracking-wide">Encadeamento de Juros de Mora</h4>
+                    <button type="button" id="adminAdicionarLinhaJuros" class="px-3 py-1 bg-emerald-600 text-white text-xs rounded hover:bg-emerald-700 transition">+ Adicionar Linha de Juros</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 text-xs uppercase">
+                                <th class="p-2 text-left">Índice</th>
+                                <th class="p-2 text-left">Data Inicial</th>
+                                <th class="p-2 text-left">Data Final</th>
+                                <th class="p-2 text-center">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminTabelaPeriodosJuros">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- SELIC -->
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <h4 class="text-sm font-bold text-slate-700 uppercase tracking-wide">Encadeamento SELIC</h4>
+                    <button type="button" id="adminAdicionarLinhaSelic" class="px-3 py-1 bg-emerald-600 text-white text-xs rounded hover:bg-emerald-700 transition">+ Adicionar Linha SELIC</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 text-xs uppercase">
+                                <th class="p-2 text-left">Índice</th>
+                                <th class="p-2 text-left">Data Inicial</th>
+                                <th class="p-2 text-left">Data Final</th>
+                                <th class="p-2 text-center">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminTabelaPeriodosSelic">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <div class="flex flex-wrap gap-3 mt-4 border-t border-slate-200 pt-4">
             <button type="button" id="adminValidar" class="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 text-sm font-semibold shadow transition">Validar Encadeamento</button>
-            <button type="button" id="adminExportar" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-semibold shadow transition">Exportar JSON</button>
-            <button type="button" id="adminImportar" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-semibold shadow transition">Importar JSON</button>
+            <button type="button" id="adminExportar" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-semibold shadow transition">Exportar Arquivo</button>
+            <button type="button" id="adminImportar" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-semibold shadow transition">Importar Arquivo</button>
             <button type="button" id="adminFechar" class="px-4 py-2 border border-slate-300 text-slate-700 rounded-md hover:bg-slate-50 text-sm font-semibold transition">Fechar</button>
         </div>
 
-        <input type="file" id="adminFileInput" accept=".json" class="hidden">
+        <input type="file" id="adminFileInput" accept=".corr,.jur,.json,application/json" class="hidden">
     `;
 
     overlay.appendChild(modalContent);
@@ -216,8 +287,8 @@ function criarModalAdmin() {
         );
     }
 
-    var tbody = document.getElementById('adminTabelaPeriodos');
-    if (tbody) adminAdicionarLinhaPeriodo();
+    adminAlternarSeccoes('correcao_monetaria');
+    adminAdicionarLinhaPeriodo('correcao');
 
     if (!adminEventosVinculados) {
         vincularEventosModal();
@@ -225,6 +296,18 @@ function criarModalAdmin() {
     }
 
     adminModalCriado = true;
+}
+
+function adminAlternarSeccoes(tipo) {
+    var seccaoCorrecao = document.getElementById('adminSeccaoCorrecao');
+    var seccaoJurosSelic = document.getElementById('adminSeccaoJurosSelic');
+    if (tipo === 'correcao_monetaria') {
+        seccaoCorrecao.style.display = 'block';
+        seccaoJurosSelic.style.display = 'none';
+    } else if (tipo === 'juros_selic') {
+        seccaoCorrecao.style.display = 'none';
+        seccaoJurosSelic.style.display = 'block';
+    }
 }
 
 // =====================================================================
@@ -240,13 +323,20 @@ function vincularEventosModal() {
         if (e.target === this) this.classList.add('hidden');
     });
 
-    document.getElementById('adminAdicionarLinha').addEventListener('click', function() {
-        adminAdicionarLinhaPeriodo();
+    document.getElementById('adminTipoParametro').addEventListener('change', function() {
+        var novoTipo = this.value;
+        adminTipoAtual = novoTipo;
+        adminAlternarSeccoes(novoTipo);
     });
 
-    document.getElementById('adminTipoParametro').addEventListener('change', function() {
-        adminTipoAtual = this.value;
-        adminAtualizarSelectsIndice();
+    document.getElementById('adminAdicionarLinhaCorrecao').addEventListener('click', function() {
+        adminAdicionarLinhaPeriodo('correcao');
+    });
+    document.getElementById('adminAdicionarLinhaJuros').addEventListener('click', function() {
+        adminAdicionarLinhaPeriodo('juros');
+    });
+    document.getElementById('adminAdicionarLinhaSelic').addEventListener('click', function() {
+        adminAdicionarLinhaPeriodo('selic');
     });
 
     document.getElementById('adminValidar').addEventListener('click', function() {
@@ -303,26 +393,32 @@ function vincularEventosModal() {
 }
 
 // =====================================================================
-// FUNÇÕES DE LINHAS DA TABELA DE PERÍODOS
+// FUNÇÕES DE LINHAS DA TABELA DE PERÍODOS (GENERICAS)
 // =====================================================================
 
-function adminObterIndicesDisponiveis() {
-    var selectTipo = document.getElementById('adminTipoParametro');
-    var tipo = selectTipo ? selectTipo.value : 'correcao_monetaria';
-    return adminObterIndicesDisponiveisPorTipo(tipo);
+function adminObterIndicesDisponiveisParaTabela(tipoTabela) {
+    var tipoParametro = '';
+    if (tipoTabela === 'correcao') tipoParametro = 'correcao_monetaria';
+    else if (tipoTabela === 'juros') tipoParametro = 'juros_mora';
+    else if (tipoTabela === 'selic') tipoParametro = 'selic';
+    return adminObterIndicesDisponiveisPorTipo(tipoParametro);
 }
 
-function adminCriarSelectIndice(valorAtual, preservarIncompativel) {
+function adminCriarSelectIndiceParaTabela(tipoTabela, valorAtual, preservarIncompativel) {
     preservarIncompativel = preservarIncompativel || false;
-    var tipoAtual = document.getElementById('adminTipoParametro').value;
-    var indices = adminObterIndicesDisponiveisPorTipo(tipoAtual);
-    var html = '<select class="admin-select-indice w-full px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">';
+    var tipoParametro = '';
+    if (tipoTabela === 'correcao') tipoParametro = 'correcao_monetaria';
+    else if (tipoTabela === 'juros') tipoParametro = 'juros_mora';
+    else if (tipoTabela === 'selic') tipoParametro = 'selic';
 
-    var existeNaBase = adminIndiceExisteNaBase(valorAtual);
-    var compativel = adminIndiceCompativelComTipo(valorAtual, tipoAtual);
+    var indices = adminObterIndicesDisponiveisPorTipo(tipoParametro);
+    var html = '<select class="admin-select-indice w-full px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" data-tipo-tabela="' + tipoTabela + '">';
+
+    var existeNaBase = adminIndiceExisteNaBase(valorAtual, tipoParametro);
+    var compativel = adminIndiceCompativelComTipo(valorAtual, tipoParametro);
 
     if (preservarIncompativel && valorAtual && existeNaBase && !compativel) {
-        html += '<option value="' + valorAtual + '" selected>' + valorAtual + ' (incompatível com ' + tipoAtual + ')</option>';
+        html += '<option value="' + valorAtual + '" selected>' + valorAtual + ' (incompatível com ' + tipoParametro + ')</option>';
     }
 
     if (valorAtual && !existeNaBase) {
@@ -343,15 +439,21 @@ function adminCriarSelectIndice(valorAtual, preservarIncompativel) {
     return html;
 }
 
-function adminAdicionarLinhaPeriodo(indice, inicio, fim, preservarIncompativel) {
+function adminAdicionarLinhaPeriodo(tipoTabela, indice, inicio, fim, preservarIncompativel) {
     preservarIncompativel = preservarIncompativel || false;
-    var tbody = document.getElementById('adminTabelaPeriodos');
+    var tbodyId = '';
+    if (tipoTabela === 'correcao') tbodyId = 'adminTabelaPeriodosCorrecao';
+    else if (tipoTabela === 'juros') tbodyId = 'adminTabelaPeriodosJuros';
+    else if (tipoTabela === 'selic') tbodyId = 'adminTabelaPeriodosSelic';
+    else return;
+
+    var tbody = document.getElementById(tbodyId);
     if (!tbody) return;
 
     var tr = document.createElement('tr');
     tr.className = 'border-b border-slate-200';
 
-    var selectIndice = adminCriarSelectIndice(indice || '', preservarIncompativel);
+    var selectIndice = adminCriarSelectIndiceParaTabela(tipoTabela, indice || '', preservarIncompativel);
 
     tr.innerHTML = `
         <td class="p-2">${selectIndice}</td>
@@ -363,11 +465,7 @@ function adminAdicionarLinhaPeriodo(indice, inicio, fim, preservarIncompativel) 
     tbody.appendChild(tr);
 
     tr.querySelector('.admin-remover-linha').addEventListener('click', function() {
-        if (tbody.children.length > 1) {
-            tr.remove();
-        } else {
-            adminExibirMensagem('É necessário pelo menos uma linha.', 'warning');
-        }
+        tr.remove();
     });
 
     tr.querySelectorAll('.admin-data-inicio, .admin-data-fim').forEach(function(input) {
@@ -383,59 +481,6 @@ function adminAdicionarLinhaPeriodo(indice, inicio, fim, preservarIncompativel) 
     });
 }
 
-function adminAtualizarSelectsIndice() {
-    var tipoAtual = document.getElementById('adminTipoParametro').value;
-    var indices = adminObterIndicesDisponiveisPorTipo(tipoAtual);
-    var selects = document.querySelectorAll('#adminTabelaPeriodos .admin-select-indice');
-
-    selects.forEach(function(sel) {
-        var valorAtual = sel.value;
-        var existeNaBase = adminIndiceExisteNaBase(valorAtual);
-        var compativel = adminIndiceCompativelComTipo(valorAtual, tipoAtual);
-
-        if (existeNaBase && !compativel) {
-            var options = '';
-            if (indices.length === 0) {
-                options += '<option value="">-- Nenhum índice disponível --</option>';
-            } else {
-                indices.forEach(function(item) {
-                    var selected = (item.codigo === indices[0].codigo) ? 'selected' : '';
-                    var label = item.nome + ' (' + item.codigo + ')';
-                    options += '<option value="' + item.codigo + '" ' + selected + '>' + label + '</option>';
-                });
-            }
-            sel.innerHTML = options;
-            return;
-        }
-
-        var existeNaLista = indices.some(function(item) {
-            return item.codigo === valorAtual;
-        });
-
-        var options = '';
-
-        if (valorAtual && !existeNaBase) {
-            options += '<option value="' + valorAtual + '" selected>' + valorAtual + ' (não cadastrado na base)</option>';
-        }
-
-        if (indices.length === 0) {
-            options += '<option value="">-- Nenhum índice disponível --</option>';
-        } else {
-            indices.forEach(function(item) {
-                var selected = (item.codigo === valorAtual && existeNaBase) ? 'selected' : '';
-                var label = item.nome + ' (' + item.codigo + ')';
-                options += '<option value="' + item.codigo + '" ' + selected + '>' + label + '</option>';
-            });
-        }
-
-        sel.innerHTML = options;
-
-        if (!sel.value && indices.length > 0) {
-            sel.value = indices[0].codigo;
-        }
-    });
-}
-
 // =====================================================================
 // COLETA E VALIDAÇÃO DOS DADOS DO ADMIN
 // =====================================================================
@@ -445,22 +490,53 @@ function adminColetarDados() {
     var nome = document.getElementById('adminNome').value.trim();
     var descricao = document.getElementById('adminDescricao').value.trim();
 
-    var linhas = document.querySelectorAll('#adminTabelaPeriodos tr');
+    if (tipo === 'correcao_monetaria') {
+        var periodosCorrecao = adminColetarPeriodosDaTabela('adminTabelaPeriodosCorrecao');
+        return {
+            tipo: tipo,
+            nome: nome,
+            descricao: descricao,
+            periodos: periodosCorrecao,
+            juros: null,
+            selic: null
+        };
+    } else if (tipo === 'juros_selic') {
+        var periodosJuros = adminColetarPeriodosDaTabela('adminTabelaPeriodosJuros');
+        var periodosSelic = adminColetarPeriodosDaTabela('adminTabelaPeriodosSelic');
+        return {
+            tipo: tipo,
+            nome: nome,
+            descricao: descricao,
+            periodos: [],
+            juros: {
+                tipoParametro: 'juros_mora',
+                periodos: periodosJuros
+            },
+            selic: {
+                tipoParametro: 'selic',
+                periodos: periodosSelic
+            }
+        };
+    }
+    return null;
+}
+
+function adminColetarPeriodosDaTabela(tbodyId) {
+    var tbody = document.getElementById(tbodyId);
+    if (!tbody) return [];
+    var linhas = tbody.querySelectorAll('tr');
     var periodos = [];
     linhas.forEach(function(tr) {
         var indiceSelect = tr.querySelector('.admin-select-indice');
         var inicioInput = tr.querySelector('.admin-data-inicio');
         var fimInput = tr.querySelector('.admin-data-fim');
         if (!indiceSelect || !inicioInput) return;
-
         var indice = indiceSelect.value;
         var inicio = inicioInput.value.trim();
         var fim = fimInput.value.trim();
-
         periodos.push({ indice: indice, inicio: inicio, fim: fim });
     });
-
-    return { tipo: tipo, nome: nome, descricao: descricao, periodos: periodos };
+    return periodos;
 }
 
 function adminValidarDados(dados) {
@@ -475,8 +551,40 @@ function adminValidarDados(dados) {
         erros.push('Tipo do parâmetro é obrigatório.');
     }
 
-    if (dados.periodos.length === 0) {
-        erros.push('Adicione pelo menos um período.');
+    if (dados.tipo === 'correcao_monetaria') {
+        var resultCorrecao = adminValidarPeriodos(dados.periodos, 'correcao_monetaria');
+        erros = erros.concat(resultCorrecao.erros);
+        avisos = avisos.concat(resultCorrecao.avisos);
+        if (dados.periodos.length === 0) {
+            erros.push('Correção Monetária deve ter pelo menos um período.');
+        }
+    } else if (dados.tipo === 'juros_selic') {
+        if (dados.juros && dados.juros.periodos && dados.juros.periodos.length > 0) {
+            var resultJuros = adminValidarPeriodos(dados.juros.periodos, 'juros_mora');
+            erros = erros.concat(resultJuros.erros);
+            avisos = avisos.concat(resultJuros.avisos);
+        }
+        if (dados.selic && dados.selic.periodos && dados.selic.periodos.length > 0) {
+            var resultSelic = adminValidarPeriodos(dados.selic.periodos, 'selic');
+            erros = erros.concat(resultSelic.erros);
+            avisos = avisos.concat(resultSelic.avisos);
+        }
+
+        // Bloquear pacote totalmente vazio (Juros vazio E SELIC vazio)
+        var jurosVazio = !dados.juros || !dados.juros.periodos || dados.juros.periodos.length === 0;
+        var selicVazio = !dados.selic || !dados.selic.periodos || dados.selic.periodos.length === 0;
+        if (jurosVazio && selicVazio) {
+            erros.push('Informe pelo menos um período de Juros de Mora ou SELIC.');
+        }
+    }
+
+    return { erros: erros, avisos: avisos };
+}
+
+function adminValidarPeriodos(periodos, tipoParametro) {
+    var erros = [];
+    var avisos = [];
+    if (!periodos || periodos.length === 0) {
         return { erros: erros, avisos: avisos };
     }
 
@@ -484,68 +592,68 @@ function adminValidarDados(dados) {
     var periodosAbertos = 0;
     var periodoAnteriorFimNum = null;
 
-    var periodosOrdenados = dados.periodos.slice().sort(function(a, b) {
+    var periodosOrdenados = periodos.slice().sort(function(a, b) {
         return adminCompetenciaParaNumero(a.inicio) - adminCompetenciaParaNumero(b.inicio);
     });
 
-    var baseDisponivel = !!window.INDEXADORES_ATUALIZACAO;
-    var base = window.INDEXADORES_ATUALIZACAO || {};
+    var catalogo = adminObterCatalogoPorTipo(tipoParametro);
+    var baseDisponivel = Object.keys(catalogo).length > 0;
 
     for (var i = 0; i < periodosOrdenados.length; i++) {
         var p = periodosOrdenados[i];
 
         if (!p.indice) {
-            erros.push('Linha ' + (i+1) + ': Índice não selecionado.');
+            erros.push('Linha ' + (i+1) + ' (' + tipoParametro + '): Índice não selecionado.');
             continue;
         }
 
         if (baseDisponivel) {
-            if (!base[p.indice]) {
-                avisos.push('Linha ' + (i+1) + ': Índice "' + p.indice + '" não existe na base atual de indexadores. Será mantido no JSON, mas pode não ser reconhecido futuramente.');
+            if (!adminIndiceExisteNaBase(p.indice, tipoParametro)) {
+                avisos.push('Linha ' + (i+1) + ' (' + tipoParametro + '): Índice "' + p.indice + '" não existe no catálogo do tipo "' + tipoParametro + '". Será mantido no JSON, mas pode não ser reconhecido futuramente.');
             } else {
-                var tipoIndexador = base[p.indice].tipo;
-                if (tipoIndexador !== dados.tipo) {
-                    avisos.push('Linha ' + (i+1) + ': Índice "' + p.indice + '" pertence ao tipo "' + tipoIndexador + '", mas o encadeamento é do tipo "' + dados.tipo + '".');
+                var tipoIndexador = catalogo[p.indice].tipo;
+                if (tipoIndexador !== tipoParametro) {
+                    avisos.push('Linha ' + (i+1) + ' (' + tipoParametro + '): Índice "' + p.indice + '" pertence ao tipo "' + tipoIndexador + '", mas o encadeamento é do tipo "' + tipoParametro + '".');
                 }
             }
         }
 
         if (!p.inicio || !regexMMAAAA.test(p.inicio)) {
-            erros.push('Linha ' + (i+1) + ': Data inicial "' + p.inicio + '" inválida. Use MM/AAAA.');
+            erros.push('Linha ' + (i+1) + ' (' + tipoParametro + '): Data inicial "' + p.inicio + '" inválida. Use MM/AAAA.');
             continue;
         }
         var numInicio = adminCompetenciaParaNumero(p.inicio);
         if (isNaN(numInicio)) {
-            erros.push('Linha ' + (i+1) + ': Data inicial "' + p.inicio + '" inválida.');
+            erros.push('Linha ' + (i+1) + ' (' + tipoParametro + '): Data inicial "' + p.inicio + '" inválida.');
             continue;
         }
 
         var numFim = null;
         if (p.fim) {
             if (!regexMMAAAA.test(p.fim)) {
-                erros.push('Linha ' + (i+1) + ': Data final "' + p.fim + '" inválida. Use MM/AAAA ou deixe vazio.');
+                erros.push('Linha ' + (i+1) + ' (' + tipoParametro + '): Data final "' + p.fim + '" inválida. Use MM/AAAA ou deixe vazio.');
                 continue;
             }
             numFim = adminCompetenciaParaNumero(p.fim);
             if (isNaN(numFim)) {
-                erros.push('Linha ' + (i+1) + ': Data final "' + p.fim + '" inválida.');
+                erros.push('Linha ' + (i+1) + ' (' + tipoParametro + '): Data final "' + p.fim + '" inválida.');
                 continue;
             }
             if (numFim < numInicio) {
-                erros.push('Linha ' + (i+1) + ': Data final anterior à data inicial.');
+                erros.push('Linha ' + (i+1) + ' (' + tipoParametro + '): Data final anterior à data inicial.');
                 continue;
             }
         } else {
             periodosAbertos++;
             if (periodosAbertos > 1) {
-                erros.push('Linha ' + (i+1) + ': Apenas um período pode estar aberto (sem data final).');
+                erros.push('Linha ' + (i+1) + ' (' + tipoParametro + '): Apenas um período pode estar aberto (sem data final).');
                 continue;
             }
             numFim = Number.MAX_SAFE_INTEGER;
         }
 
         if (periodoAnteriorFimNum !== null && numInicio <= periodoAnteriorFimNum) {
-            erros.push('Linha ' + (i+1) + ': Período se sobrepõe ao anterior (' + periodosOrdenados[i-1].inicio + ' a ' + (periodosOrdenados[i-1].fim || 'aberto') + ').');
+            erros.push('Linha ' + (i+1) + ' (' + tipoParametro + '): Período se sobrepõe ao anterior.');
         }
 
         periodoAnteriorFimNum = numFim;
@@ -575,53 +683,103 @@ function adminExibirMensagem(texto, tipo) {
 // =====================================================================
 
 function adminExportarJSON(dados) {
-    var tipo = dados.tipo;
-    var nome = dados.nome;
-    var descricao = dados.descricao;
-    var periodos = dados.periodos;
+    if (dados.tipo === 'correcao_monetaria') {
+        var periodosOrdenados = dados.periodos.slice().sort(function(a, b) {
+            return adminCompetenciaParaNumero(a.inicio) - adminCompetenciaParaNumero(b.inicio);
+        });
+        var indices = [];
+        periodosOrdenados.forEach(function(p) {
+            if (p.indice && indices.indexOf(p.indice) === -1) {
+                indices.push(p.indice);
+            }
+        });
+        var jsonObj = {
+            tipoArquivo: 'parametros_atualizacao',
+            tipoParametro: 'correcao_monetaria',
+            versao: '1.0',
+            nome: dados.nome,
+            descricao: dados.descricao || '',
+            dataCriacao: adminDataAtualFormatada(),
+            indicesUtilizados: indices,
+            periodos: periodosOrdenados.map(function(p) {
+                return { indice: p.indice, inicio: p.inicio, fim: p.fim || '' };
+            })
+        };
+        var jsonStr = JSON.stringify(jsonObj, null, 2);
+        var blob = new Blob([jsonStr], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        var nomeArquivo = adminGerarNomeArquivo('correcao_monetaria', dados.nome);
+        link.href = url;
+        link.download = nomeArquivo;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        adminExibirMensagem('✅ Arquivo exportado com sucesso: ' + nomeArquivo, 'success');
+    } else if (dados.tipo === 'juros_selic') {
+        var jsonObj = {
+            tipoArquivo: 'parametros_juros_selic',
+            tipoParametro: 'juros_selic',
+            versao: '1.0',
+            nome: dados.nome,
+            descricao: dados.descricao || '',
+            dataCriacao: adminDataAtualFormatada(),
+            juros: null,
+            selic: null
+        };
 
-    var periodosOrdenados = periodos.slice().sort(function(a, b) {
-        return adminCompetenciaParaNumero(a.inicio) - adminCompetenciaParaNumero(b.inicio);
-    });
-
-    var indices = [];
-    periodosOrdenados.forEach(function(p) {
-        if (p.indice && indices.indexOf(p.indice) === -1) {
-            indices.push(p.indice);
-        }
-    });
-
-    var jsonObj = {
-        tipoArquivo: 'parametros_atualizacao',
-        tipoParametro: tipo,
-        versao: '1.0',
-        nome: nome,
-        descricao: descricao || '',
-        dataCriacao: adminDataAtualFormatada(),
-        indicesUtilizados: indices,
-        periodos: periodosOrdenados.map(function(p) {
-            return {
-                indice: p.indice,
-                inicio: p.inicio,
-                fim: p.fim || ''
+        if (dados.juros && dados.juros.periodos && dados.juros.periodos.length > 0) {
+            var periodosJuros = dados.juros.periodos.slice().sort(function(a, b) {
+                return adminCompetenciaParaNumero(a.inicio) - adminCompetenciaParaNumero(b.inicio);
+            });
+            var indicesJuros = [];
+            periodosJuros.forEach(function(p) {
+                if (p.indice && indicesJuros.indexOf(p.indice) === -1) {
+                    indicesJuros.push(p.indice);
+                }
+            });
+            jsonObj.juros = {
+                tipoParametro: 'juros_mora',
+                indicesUtilizados: indicesJuros,
+                periodos: periodosJuros.map(function(p) {
+                    return { indice: p.indice, inicio: p.inicio, fim: p.fim || '' };
+                })
             };
-        })
-    };
+        }
 
-    var jsonStr = JSON.stringify(jsonObj, null, 2);
-    var blob = new Blob([jsonStr], { type: 'application/json' });
-    var url = URL.createObjectURL(blob);
-    var link = document.createElement('a');
+        if (dados.selic && dados.selic.periodos && dados.selic.periodos.length > 0) {
+            var periodosSelic = dados.selic.periodos.slice().sort(function(a, b) {
+                return adminCompetenciaParaNumero(a.inicio) - adminCompetenciaParaNumero(b.inicio);
+            });
+            var indicesSelic = [];
+            periodosSelic.forEach(function(p) {
+                if (p.indice && indicesSelic.indexOf(p.indice) === -1) {
+                    indicesSelic.push(p.indice);
+                }
+            });
+            jsonObj.selic = {
+                tipoParametro: 'selic',
+                indicesUtilizados: indicesSelic,
+                periodos: periodosSelic.map(function(p) {
+                    return { indice: p.indice, inicio: p.inicio, fim: p.fim || '' };
+                })
+            };
+        }
 
-    var nomeArquivo = adminGerarNomeArquivo(tipo, nome);
-    link.href = url;
-    link.download = nomeArquivo;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    adminExibirMensagem('✅ JSON exportado com sucesso: ' + nomeArquivo, 'success');
+        var jsonStr = JSON.stringify(jsonObj, null, 2);
+        var blob = new Blob([jsonStr], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        var nomeArquivo = adminGerarNomeArquivo('juros_selic', dados.nome);
+        link.href = url;
+        link.download = nomeArquivo;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        adminExibirMensagem('✅ Arquivo exportado com sucesso: ' + nomeArquivo, 'success');
+    }
 }
 
 // =====================================================================
@@ -629,80 +787,312 @@ function adminExportarJSON(dados) {
 // =====================================================================
 
 function adminImportarJSON(json) {
-    if (json.tipoArquivo !== 'parametros_atualizacao') {
-        adminExibirMensagem('❌ O arquivo não é um JSON de parâmetros de atualização.', 'error');
-        return;
-    }
+    // =============================================================
+    // VALIDAÇÃO DE ESTRUTURA (formato antigo)
+    // =============================================================
+    if (json.tipoArquivo === 'parametros_atualizacao') {
+        // Valida campos obrigatórios
+        if (!json.tipoParametro) {
+            adminExibirMensagem('❌ JSON inválido: tipoParametro ausente.', 'error');
+            return;
+        }
+        if (!json.nome) {
+            adminExibirMensagem('❌ JSON inválido: nome ausente.', 'error');
+            return;
+        }
+        if (!Array.isArray(json.periodos)) {
+            adminExibirMensagem('❌ JSON inválido: períodos ausentes ou inválidos.', 'error');
+            return;
+        }
 
-    if (!json.tipoParametro || !json.nome || !json.periodos || json.periodos.length === 0) {
-        adminExibirMensagem('❌ JSON inválido: faltam campos obrigatórios.', 'error');
-        return;
-    }
-
-    var baseDisponivel = !!window.INDEXADORES_ATUALIZACAO;
-    var indicesNaoEncontrados = [];
-    var indicesTipoIncompativel = [];
-
-    if (baseDisponivel) {
-        var base = window.INDEXADORES_ATUALIZACAO;
-        json.periodos.forEach(function(p) {
-            if (p.indice) {
-                if (!base[p.indice]) {
-                    if (indicesNaoEncontrados.indexOf(p.indice) === -1) {
-                        indicesNaoEncontrados.push(p.indice);
-                    }
-                } else if (base[p.indice].tipo !== json.tipoParametro) {
-                    if (indicesTipoIncompativel.indexOf(p.indice) === -1) {
-                        indicesTipoIncompativel.push(p.indice);
-                    }
-                }
-            }
-        });
-    }
-
-    var selectTipo = document.getElementById('adminTipoParametro');
-    if (selectTipo) {
-        var option = selectTipo.querySelector('option[value="' + json.tipoParametro + '"]');
-        if (option) {
-            selectTipo.value = json.tipoParametro;
-            adminTipoAtual = json.tipoParametro;
-        } else {
-            adminExibirMensagem('⚠️ Tipo "' + json.tipoParametro + '" não suportado. Será usado "correcao_monetaria".', 'warning');
-            selectTipo.value = 'correcao_monetaria';
+        // Agora processa conforme o tipo
+        if (json.tipoParametro === 'correcao_monetaria') {
+            document.getElementById('adminTipoParametro').value = 'correcao_monetaria';
             adminTipoAtual = 'correcao_monetaria';
+            adminAlternarSeccoes('correcao_monetaria');
+            var tbodyCorrecao = document.getElementById('adminTabelaPeriodosCorrecao');
+            tbodyCorrecao.innerHTML = '';
+            json.periodos.forEach(function(p) {
+                adminAdicionarLinhaPeriodo('correcao', p.indice, p.inicio, p.fim || '', true);
+            });
+            document.getElementById('adminNome').value = json.nome || '';
+            document.getElementById('adminDescricao').value = json.descricao || '';
+            adminExibirMensagem('✅ Arquivo de correção importado com sucesso.', 'success');
+            return;
+        } else if (json.tipoParametro === 'juros_mora') {
+            document.getElementById('adminTipoParametro').value = 'juros_selic';
+            adminTipoAtual = 'juros_selic';
+            adminAlternarSeccoes('juros_selic');
+            var tbodyJuros = document.getElementById('adminTabelaPeriodosJuros');
+            tbodyJuros.innerHTML = '';
+            var tbodySelic = document.getElementById('adminTabelaPeriodosSelic');
+            tbodySelic.innerHTML = '';
+            json.periodos.forEach(function(p) {
+                adminAdicionarLinhaPeriodo('juros', p.indice, p.inicio, p.fim || '', true);
+            });
+            document.getElementById('adminNome').value = json.nome || '';
+            document.getElementById('adminDescricao').value = json.descricao || '';
+            adminExibirMensagem('✅ Arquivo de juros antigo importado com sucesso. (SELIC vazio)', 'success');
+            return;
+        } else if (json.tipoParametro === 'selic') {
+            document.getElementById('adminTipoParametro').value = 'juros_selic';
+            adminTipoAtual = 'juros_selic';
+            adminAlternarSeccoes('juros_selic');
+            var tbodyJuros = document.getElementById('adminTabelaPeriodosJuros');
+            tbodyJuros.innerHTML = '';
+            var tbodySelic = document.getElementById('adminTabelaPeriodosSelic');
+            tbodySelic.innerHTML = '';
+            json.periodos.forEach(function(p) {
+                adminAdicionarLinhaPeriodo('selic', p.indice, p.inicio, p.fim || '', true);
+            });
+            document.getElementById('adminNome').value = json.nome || '';
+            document.getElementById('adminDescricao').value = json.descricao || '';
+            adminExibirMensagem('✅ Arquivo de SELIC antigo importado com sucesso. (Juros vazio)', 'success');
+            return;
+        } else {
+            adminExibirMensagem('❌ Tipo de parâmetro não reconhecido.', 'error');
+            return;
         }
     }
 
-    document.getElementById('adminNome').value = json.nome || '';
-    document.getElementById('adminDescricao').value = json.descricao || '';
+    // =============================================================
+    // VALIDAÇÃO DE ESTRUTURA (novo pacote)
+    // =============================================================
+    if (json.tipoArquivo === 'parametros_juros_selic') {
+        if (json.tipoParametro !== 'juros_selic') {
+            adminExibirMensagem('❌ JSON inválido: tipo do pacote de Juros e SELIC incompatível.', 'error');
+            return;
+        }
+        if (!json.nome) {
+            adminExibirMensagem('❌ JSON inválido: nome ausente.', 'error');
+            return;
+        }
 
-    var tbody = document.getElementById('adminTabelaPeriodos');
-    tbody.innerHTML = '';
+        // Valida juros se existir
+        if (json.juros !== null && json.juros !== undefined) {
+            if (!Array.isArray(json.juros.periodos)) {
+                adminExibirMensagem('❌ JSON inválido: períodos de juros ausentes ou inválidos.', 'error');
+                return;
+            }
+        }
+        // Valida selic se existir
+        if (json.selic !== null && json.selic !== undefined) {
+            if (!Array.isArray(json.selic.periodos)) {
+                adminExibirMensagem('❌ JSON inválido: períodos SELIC ausentes ou inválidos.', 'error');
+                return;
+            }
+        }
 
-    json.periodos.forEach(function(p) {
-        adminAdicionarLinhaPeriodo(p.indice, p.inicio, p.fim || '', true);
+        // Importação propriamente dita
+        document.getElementById('adminTipoParametro').value = 'juros_selic';
+        adminTipoAtual = 'juros_selic';
+        adminAlternarSeccoes('juros_selic');
+
+        var tbodyJuros = document.getElementById('adminTabelaPeriodosJuros');
+        tbodyJuros.innerHTML = '';
+        var tbodySelic = document.getElementById('adminTabelaPeriodosSelic');
+        tbodySelic.innerHTML = '';
+
+        if (json.juros && json.juros.periodos && json.juros.periodos.length > 0) {
+            json.juros.periodos.forEach(function(p) {
+                adminAdicionarLinhaPeriodo('juros', p.indice, p.inicio, p.fim || '', true);
+            });
+        }
+
+        if (json.selic && json.selic.periodos && json.selic.periodos.length > 0) {
+            json.selic.periodos.forEach(function(p) {
+                adminAdicionarLinhaPeriodo('selic', p.indice, p.inicio, p.fim || '', true);
+            });
+        }
+
+        document.getElementById('adminNome').value = json.nome || '';
+        document.getElementById('adminDescricao').value = json.descricao || '';
+        adminExibirMensagem('✅ Arquivo de Juros e SELIC importado com sucesso.', 'success');
+        return;
+    }
+
+    adminExibirMensagem('❌ O arquivo não é um JSON de parâmetros reconhecido.', 'error');
+}
+
+// =====================================================================
+// FUNÇÕES AUXILIARES PARA EXIBIÇÃO DOS PERÍODOS (Fase 1.8F-B4)
+// =====================================================================
+
+function adminObterNomeAmigavelIndice(codigo, tipoParametro) {
+    if (!codigo) return codigo;
+    var catalogo = adminObterCatalogoPorTipo(tipoParametro);
+    if (catalogo && catalogo[codigo] && catalogo[codigo].nome) {
+        return catalogo[codigo].nome;
+    }
+    return codigo;
+}
+
+function adminOrdenarPeriodosParaExibicao(periodos) {
+    if (!periodos || !Array.isArray(periodos)) return [];
+    var copia = periodos.slice();
+    copia.sort(function(a, b) {
+        return adminCompetenciaParaNumero(a.inicio) - adminCompetenciaParaNumero(b.inicio);
+    });
+    return copia;
+}
+
+function adminCriarBlocoPeriodosStatus(titulo, periodos, tipoParametro) {
+    var container = document.createElement('div');
+    container.className = 'mt-2';
+
+    var tituloEl = document.createElement('div');
+    tituloEl.className = 'text-xs font-semibold text-slate-600';
+    tituloEl.textContent = titulo;
+    container.appendChild(tituloEl);
+
+    if (!periodos || periodos.length === 0) {
+        var nenhum = document.createElement('div');
+        nenhum.className = 'text-xs text-slate-500 mt-1';
+        nenhum.textContent = 'Nenhum período definido.';
+        container.appendChild(nenhum);
+        return container;
+    }
+
+    var periodosOrdenados = adminOrdenarPeriodosParaExibicao(periodos);
+    var wrapper = document.createElement('div');
+    wrapper.className = 'flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs';
+
+    periodosOrdenados.forEach(function(p) {
+        var item = document.createElement('span');
+        item.className = 'inline-flex items-baseline whitespace-nowrap';
+
+        var bullet = document.createElement('span');
+        bullet.className = 'text-green-900 font-bold mr-1';
+        bullet.textContent = '►';
+        item.appendChild(bullet);
+
+        var nome = document.createElement('span');
+        nome.className = 'text-green-900 font-semibold';
+        nome.textContent = adminObterNomeAmigavelIndice(p.indice, tipoParametro) + ':';
+        item.appendChild(nome);
+
+        var intervalo = document.createElement('span');
+        intervalo.className = 'text-green-700 ml-1';
+        if (p.fim && p.fim.trim() !== '') {
+            intervalo.textContent = p.inicio + ' a ' + p.fim + ';';
+        } else {
+            intervalo.textContent = p.inicio + ' em diante;';
+        }
+        item.appendChild(intervalo);
+
+        wrapper.appendChild(item);
     });
 
-    var msg = '✅ JSON importado com sucesso!';
+    container.appendChild(wrapper);
+    return container;
+}
 
-    if (indicesNaoEncontrados.length > 0) {
-        msg += '\n⚠️ Aviso: os seguintes índices não foram encontrados na base atual: ' +
-            indicesNaoEncontrados.join(', ') +
-            '. Eles foram preservados, mas podem não ser reconhecidos.';
+function adminAtualizarStatusDetalhado(tipoEsperado, json, mensagemBase) {
+    var statusId = (tipoEsperado === 'correcao_monetaria') ? 'statusCorrecao' : 'statusJurosSelic';
+    var div = document.getElementById(statusId);
+    if (!div) return;
+
+    // Limpa o conteúdo atual
+    div.innerHTML = '';
+    div.className = 'flex-1 min-w-0 text-sm p-3 rounded-md bg-green-100 text-green-700';
+
+    // Mensagem principal
+    var msgEl = document.createElement('div');
+    msgEl.className = 'font-semibold';
+    msgEl.textContent = mensagemBase || '✅ Parâmetros carregados com sucesso!';
+    div.appendChild(msgEl);
+
+    // Nome e descrição (sempre exibidos)
+    var nomeEl = document.createElement('div');
+    nomeEl.className = 'mt-1';
+    nomeEl.textContent = 'Nome: ' + (json.nome || 'N/A');
+    div.appendChild(nomeEl);
+
+    var descEl = document.createElement('div');
+    descEl.className = 'text-xs';
+    descEl.textContent = 'Descrição: ' + (json.descricao || 'N/A');
+    div.appendChild(descEl);
+
+    if (tipoEsperado === 'correcao_monetaria') {
+        // Correção monetária
+        var periodos = json.periodos || [];
+        var indices = [];
+        periodos.forEach(function(p) {
+            if (p.indice && indices.indexOf(p.indice) === -1) {
+                indices.push(p.indice);
+            }
+        });
+        var indiceStr = indices.length > 0 ? indices.join(', ') : 'N/A';
+        var infoEl = document.createElement('div');
+        infoEl.className = 'text-xs mt-1';
+        infoEl.textContent = 'Índices: ' + indiceStr + '  |  Períodos: ' + periodos.length;
+        div.appendChild(infoEl);
+
+        var bloco = adminCriarBlocoPeriodosStatus('Encadeamento', periodos, 'correcao_monetaria');
+        div.appendChild(bloco);
+
+    } else if (tipoEsperado === 'juros_selic') {
+        // Juros e SELIC
+        // Juros
+        var jurosPeriodos = (json.juros && json.juros.periodos) ? json.juros.periodos : [];
+        var jurosEl = document.createElement('div');
+        jurosEl.className = 'mt-2';
+        var jurosTitulo = document.createElement('div');
+        jurosTitulo.className = 'font-semibold text-sm';
+        jurosTitulo.textContent = 'Juros:';
+        jurosEl.appendChild(jurosTitulo);
+
+        if (jurosPeriodos.length > 0) {
+            var jurosIndices = [];
+            jurosPeriodos.forEach(function(p) {
+                if (p.indice && jurosIndices.indexOf(p.indice) === -1) {
+                    jurosIndices.push(p.indice);
+                }
+            });
+            var jurosInfo = document.createElement('div');
+            jurosInfo.className = 'text-xs';
+            jurosInfo.textContent = 'Índices: ' + jurosIndices.join(', ') + '  |  Períodos: ' + jurosPeriodos.length;
+            jurosEl.appendChild(jurosInfo);
+            var blocoJuros = adminCriarBlocoPeriodosStatus('Encadeamento de Juros', jurosPeriodos, 'juros_mora');
+            jurosEl.appendChild(blocoJuros);
+        } else {
+            var nenhumJuros = document.createElement('div');
+            nenhumJuros.className = 'text-xs text-slate-600';
+            nenhumJuros.textContent = 'Nenhum período definido.';
+            jurosEl.appendChild(nenhumJuros);
+        }
+        div.appendChild(jurosEl);
+
+        // SELIC
+        var selicPeriodos = (json.selic && json.selic.periodos) ? json.selic.periodos : [];
+        var selicEl = document.createElement('div');
+        selicEl.className = 'mt-2';
+        var selicTitulo = document.createElement('div');
+        selicTitulo.className = 'font-semibold text-sm';
+        selicTitulo.textContent = 'SELIC:';
+        selicEl.appendChild(selicTitulo);
+
+        if (selicPeriodos.length > 0) {
+            var selicIndices = [];
+            selicPeriodos.forEach(function(p) {
+                if (p.indice && selicIndices.indexOf(p.indice) === -1) {
+                    selicIndices.push(p.indice);
+                }
+            });
+            var selicInfo = document.createElement('div');
+            selicInfo.className = 'text-xs';
+            selicInfo.textContent = 'Índices: ' + selicIndices.join(', ') + '  |  Períodos: ' + selicPeriodos.length;
+            selicEl.appendChild(selicInfo);
+            var blocoSelic = adminCriarBlocoPeriodosStatus('Encadeamento SELIC', selicPeriodos, 'selic');
+            selicEl.appendChild(blocoSelic);
+        } else {
+            var nenhumSelic = document.createElement('div');
+            nenhumSelic.className = 'text-xs text-slate-600';
+            nenhumSelic.textContent = 'Nenhum período definido.';
+            selicEl.appendChild(nenhumSelic);
+        }
+        div.appendChild(selicEl);
     }
-
-    if (indicesTipoIncompativel.length > 0) {
-        msg += '\n⚠️ Aviso: os seguintes índices pertencem a outro tipo de parâmetro: ' +
-            indicesTipoIncompativel.join(', ') +
-            '. Eles foram preservados como incompatíveis com o tipo "' +
-            json.tipoParametro +
-            '".';
-    }
-
-    adminExibirMensagem(
-        msg,
-        (indicesNaoEncontrados.length > 0 || indicesTipoIncompativel.length > 0) ? 'warning' : 'success'
-    );
 }
 
 // =====================================================================
@@ -714,71 +1104,111 @@ function adminCarregarParametroGuia5(file, tipoEsperado) {
     reader.onload = function(e) {
         try {
             var json = JSON.parse(e.target.result);
-            if (json.tipoArquivo !== 'parametros_atualizacao') {
-                adminExibirMensagemGuia5('O arquivo não é um JSON de parâmetros de atualização.', 'error', tipoEsperado);
-                return;
-            }
-            if (json.tipoParametro !== tipoEsperado) {
-                var nomeEsperado = tipoEsperado === 'correcao_monetaria' ? 'correção monetária' : 'juros de mora';
-                adminExibirMensagemGuia5('Este arquivo não é de ' + nomeEsperado + '.', 'error', tipoEsperado);
-                return;
-            }
-            if (!json.nome || !json.periodos || json.periodos.length === 0) {
-                adminExibirMensagemGuia5('JSON inválido: faltam campos obrigatórios.', 'error', tipoEsperado);
-                return;
-            }
 
-            var baseDisponivel = !!window.INDEXADORES_ATUALIZACAO;
-            var indicesNaoEncontrados = [];
-            var indicesTipoIncompativel = [];
-            if (baseDisponivel) {
-                var base = window.INDEXADORES_ATUALIZACAO;
-                json.periodos.forEach(function(p) {
-                    if (p.indice) {
-                        if (!base[p.indice]) {
-                            if (indicesNaoEncontrados.indexOf(p.indice) === -1) {
-                                indicesNaoEncontrados.push(p.indice);
-                            }
-                        } else if (base[p.indice].tipo !== json.tipoParametro) {
-                            if (indicesTipoIncompativel.indexOf(p.indice) === -1) {
-                                indicesTipoIncompativel.push(p.indice);
-                            }
-                        }
-                    }
-                });
-            }
-
+            // =============================================================
+            // FLUXO A: CORREÇÃO MONETÁRIA
+            // =============================================================
             if (tipoEsperado === 'correcao_monetaria') {
+                // Valida estrutura
+                if (json.tipoArquivo !== 'parametros_atualizacao' ||
+                    json.tipoParametro !== 'correcao_monetaria' ||
+                    !json.nome ||
+                    !Array.isArray(json.periodos)) {
+                    adminExibirMensagemGuia5('O arquivo não é um JSON de correção monetária válido.', 'error', 'correcao_monetaria');
+                    return;
+                }
                 window.parametrosCorrecaoAtual = json;
-                var msg = '✅ Parâmetros de correção carregados com sucesso!\n' +
-                          'Nome: ' + json.nome + '\n' +
-                          'Descrição: ' + (json.descricao || 'N/A') + '\n' +
-                          'Índices: ' + (json.indicesUtilizados ? json.indicesUtilizados.join(', ') : 'N/A') + '\n' +
-                          'Períodos: ' + json.periodos.length;
-                if (indicesNaoEncontrados.length > 0) {
-                    msg += '\n⚠️ Atenção: índices não encontrados na base: ' + indicesNaoEncontrados.join(', ');
-                }
-                if (indicesTipoIncompativel.length > 0) {
-                    msg += '\n⚠️ Atenção: índices incompatíveis com o tipo: ' + indicesTipoIncompativel.join(', ');
-                }
-                adminExibirMensagemGuia5(msg, 'success', tipoEsperado);
-                // Habilita botão de cálculo se houver diferenças importadas
+                // Atualiza status detalhado
+                adminAtualizarStatusDetalhado('correcao_monetaria', json, '✅ Parâmetros de correção carregados com sucesso!');
                 atualizarBotoesAtualizacao();
-            } else if (tipoEsperado === 'juros_mora') {
-                window.parametrosJurosAtual = json;
-                var msg = '✅ Parâmetros de juros carregados com sucesso!\n' +
-                          'Nome: ' + json.nome + '\n' +
-                          'Descrição: ' + (json.descricao || 'N/A') + '\n' +
-                          'Índices: ' + (json.indicesUtilizados ? json.indicesUtilizados.join(', ') : 'N/A') + '\n' +
-                          'Períodos: ' + json.periodos.length;
-                if (indicesNaoEncontrados.length > 0) {
-                    msg += '\n⚠️ Atenção: índices não encontrados na base: ' + indicesNaoEncontrados.join(', ');
-                }
-                if (indicesTipoIncompativel.length > 0) {
-                    msg += '\n⚠️ Atenção: índices incompatíveis com o tipo: ' + indicesTipoIncompativel.join(', ');
-                }
-                adminExibirMensagemGuia5(msg, 'success', tipoEsperado);
+                return;
             }
+
+            // =============================================================
+            // FLUXO B: JUROS E SELIC
+            // =============================================================
+
+            // 1. Tentar novo pacote
+            if (json.tipoArquivo === 'parametros_juros_selic' && json.tipoParametro === 'juros_selic') {
+                // Valida estrutura
+                if (!json.nome) {
+                    adminExibirMensagemGuia5('JSON inválido: nome ausente.', 'error', 'juros_selic');
+                    return;
+                }
+                if (json.juros !== null && json.juros !== undefined && !Array.isArray(json.juros.periodos)) {
+                    adminExibirMensagemGuia5('JSON inválido: períodos de juros ausentes ou inválidos.', 'error', 'juros_selic');
+                    return;
+                }
+                if (json.selic !== null && json.selic !== undefined && !Array.isArray(json.selic.periodos)) {
+                    adminExibirMensagemGuia5('JSON inválido: períodos SELIC ausentes ou inválidos.', 'error', 'juros_selic');
+                    return;
+                }
+
+                var jurosObj = json.juros ? Object.assign({}, json.juros, {
+                    nomePacote: json.nome || '',
+                    descricaoPacote: json.descricao || '',
+                    dataCriacaoPacote: json.dataCriacao || ''
+                }) : null;
+
+                var selicObj = json.selic ? Object.assign({}, json.selic, {
+                    nomePacote: json.nome || '',
+                    descricaoPacote: json.descricao || '',
+                    dataCriacaoPacote: json.dataCriacao || ''
+                }) : null;
+
+                window.parametrosJurosAtual = jurosObj;
+                window.parametrosSelicAtual = selicObj;
+
+                var pacoteCompleto = {
+                    nome: json.nome,
+                    descricao: json.descricao || '',
+                    juros: jurosObj,
+                    selic: selicObj
+                };
+                adminAtualizarStatusDetalhado('juros_selic', pacoteCompleto, '✅ Parâmetros de Juros e SELIC carregados com sucesso!');
+                return;
+            }
+
+            // 2. Tentar formatos antigos
+            if (json.tipoArquivo === 'parametros_atualizacao') {
+                if (json.tipoParametro === 'correcao_monetaria') {
+                    adminExibirMensagemGuia5('Este arquivo é de correção monetária, não de juros/SELIC.', 'error', 'juros_selic');
+                    return;
+                } else if (json.tipoParametro === 'juros_mora') {
+                    if (!json.nome || !Array.isArray(json.periodos)) {
+                        adminExibirMensagemGuia5('JSON de juros inválido: períodos ausentes ou inválidos.', 'error', 'juros_selic');
+                        return;
+                    }
+                    window.parametrosJurosAtual = json;
+                    window.parametrosSelicAtual = null;
+                    var pacoteAntigo = {
+                        nome: json.nome,
+                        descricao: json.descricao || '',
+                        juros: json,
+                        selic: null
+                    };
+                    adminAtualizarStatusDetalhado('juros_selic', pacoteAntigo, '✅ Parâmetros de juros (formato antigo) carregados.');
+                    return;
+                } else if (json.tipoParametro === 'selic') {
+                    if (!json.nome || !Array.isArray(json.periodos)) {
+                        adminExibirMensagemGuia5('JSON de SELIC inválido: períodos ausentes ou inválidos.', 'error', 'juros_selic');
+                        return;
+                    }
+                    window.parametrosSelicAtual = json;
+                    window.parametrosJurosAtual = null;
+                    var pacoteAntigoSelic = {
+                        nome: json.nome,
+                        descricao: json.descricao || '',
+                        juros: null,
+                        selic: json
+                    };
+                    adminAtualizarStatusDetalhado('juros_selic', pacoteAntigoSelic, '✅ Parâmetros SELIC (formato antigo) carregados.');
+                    return;
+                }
+            }
+
+            adminExibirMensagemGuia5('Tipo de arquivo não reconhecido para Juros e SELIC.', 'error', 'juros_selic');
+
         } catch (err) {
             adminExibirMensagemGuia5('Erro ao ler o arquivo: ' + err.message, 'error', tipoEsperado);
         }
@@ -787,19 +1217,67 @@ function adminCarregarParametroGuia5(file, tipoEsperado) {
 }
 
 function adminExibirMensagemGuia5(texto, tipo, tipoEsperado) {
-    var statusId = tipoEsperado === 'correcao_monetaria' ? 'statusCorrecao' : 'statusJuros';
+    var statusId;
+    if (tipoEsperado === 'correcao_monetaria') {
+        statusId = 'statusCorrecao';
+    } else {
+        statusId = 'statusJurosSelic';
+    }
     var div = document.getElementById(statusId);
     if (!div) return;
-    div.className = 'text-sm p-2 rounded-md mt-1';
+
+    // Limpa e define estilo básico
+    div.innerHTML = '';
+    div.className = 'flex-1 min-w-0 text-sm p-3 rounded-md';
     if (tipo === 'success') {
         div.className += ' bg-green-100 text-green-700';
     } else if (tipo === 'error') {
         div.className += ' bg-red-100 text-red-700';
+    } else if (tipo === 'warning') {
+        div.className += ' bg-amber-100 text-amber-700';
     } else {
         div.className += ' bg-slate-100 text-slate-600';
     }
-    div.textContent = texto;
-    div.style.whiteSpace = 'pre-wrap';
+    // Para mensagens simples, coloca o texto em um parágrafo
+    var p = document.createElement('p');
+    p.textContent = texto;
+    div.appendChild(p);
+}
+
+// =====================================================================
+// LIMPAR DIFERENÇAS DA GUIA 5 (Fase 1.8F-A)
+// =====================================================================
+
+function limparDiferencasAtualizacao(mensagem) {
+    window.diferencasAtualizacaoAtual = null;
+    window.resultadosAtualizacao = null;
+
+    var container = document.getElementById('containerTabelaDiferencas');
+    var tbody = document.getElementById('corpoDiferencasAtualizacao');
+    var resumo = document.getElementById('resumoAtualizacao');
+    var totalOriginalEl = document.getElementById('totalOriginalAtualizacao');
+    var totalCorrigidoEl = document.getElementById('totalCorrigidoAtualizacao');
+    var totalJurosEl = document.getElementById('totalJurosAtualizacao');
+    var status = document.getElementById('statusDiferencas');
+    var statusAtualizacao = document.getElementById('statusAtualizacao');
+
+    if (container) container.classList.add('hidden');
+    if (resumo) resumo.classList.add('hidden');
+    if (tbody) tbody.innerHTML = '';
+    if (totalOriginalEl) totalOriginalEl.textContent = 'R$ 0,00';
+    if (totalCorrigidoEl) totalCorrigidoEl.textContent = 'R$ 0,00';
+    if (totalJurosEl) totalJurosEl.textContent = 'R$ 0,00';
+
+    if (status) {
+        status.textContent = mensagem || 'Nenhuma diferença importada.';
+        status.className = 'text-sm text-slate-500';
+    }
+    if (statusAtualizacao) {
+        statusAtualizacao.textContent = 'Aguardando diferenças e parâmetros de correção.';
+        statusAtualizacao.className = 'text-sm text-slate-500';
+    }
+
+    atualizarBotoesAtualizacao();
 }
 
 // =====================================================================
@@ -828,6 +1306,29 @@ function coletarDiferencasParaAtualizacao() {
     });
 
     return resultados;
+}
+
+// =====================================================================
+// FUNÇÃO AUXILIAR PARA FORMATAÇÃO DE PERCENTUAIS (Fase 1.8F-B2)
+// =====================================================================
+
+function formatarPercentualAtualizacao(valor, casas) {
+    if (casas === undefined || casas === null) {
+        casas = 4;
+    }
+
+    if (
+        valor === null ||
+        valor === undefined ||
+        !Number.isFinite(Number(valor))
+    ) {
+        return '-';
+    }
+
+    return Number(valor).toLocaleString('pt-BR', {
+        minimumFractionDigits: casas,
+        maximumFractionDigits: casas
+    }) + '%';
 }
 
 // =====================================================================
@@ -861,7 +1362,6 @@ function renderizarTabelaCorrigida(dados) {
         return;
     }
 
-    // Ordena
     var dadosOrdenados = dados.slice().sort(function(a, b) {
         var aIs13 = a.competencia.indexOf('13º') === 0;
         var bIs13 = b.competencia.indexOf('13º') === 0;
@@ -892,13 +1392,11 @@ function renderizarTabelaCorrigida(dados) {
         var is13 = item.competencia.indexOf('13º') === 0;
         if (is13) tr.classList.add('linha-13');
 
-        // Competência
         var tdComp = document.createElement('td');
         tdComp.className = 'p-2 font-semibold text-slate-800';
         tdComp.textContent = item.competencia;
         tr.appendChild(tdComp);
 
-        // Diferença Original
         var tdOrig = document.createElement('td');
         tdOrig.className = 'p-2 text-right font-mono';
         tdOrig.textContent = formatarMoedaAtualizacao(item.diferenca);
@@ -906,7 +1404,6 @@ function renderizarTabelaCorrigida(dados) {
         else if (item.diferenca > 0) tdOrig.style.color = '#16a34a';
         tr.appendChild(tdOrig);
 
-        // Índice / Critério (se houver resultado da correção)
         var tdCriterio = document.createElement('td');
         tdCriterio.className = 'p-2 text-left text-xs';
         if (item.criterio) {
@@ -916,7 +1413,6 @@ function renderizarTabelaCorrigida(dados) {
         }
         tr.appendChild(tdCriterio);
 
-        // Coeficiente
         var tdCoef = document.createElement('td');
         tdCoef.className = 'p-2 text-right font-mono';
         if (item.coeficiente !== undefined && item.coeficiente !== null) {
@@ -926,7 +1422,6 @@ function renderizarTabelaCorrigida(dados) {
         }
         tr.appendChild(tdCoef);
 
-        // Valor Corrigido
         var tdCorr = document.createElement('td');
         tdCorr.className = 'p-2 text-right font-mono font-semibold';
         if (item.valorCorrigido !== undefined && item.valorCorrigido !== null) {
@@ -940,14 +1435,49 @@ function renderizarTabelaCorrigida(dados) {
         }
         tr.appendChild(tdCorr);
 
+        // --- NOVAS CÉLULAS (Fase 1.8F-B2) ---
+
+        // 1. % Juros antes da SELIC
+        var tdJurosAntes = document.createElement('td');
+        tdJurosAntes.className = 'p-2 text-right font-mono';
+        tdJurosAntes.textContent = formatarPercentualAtualizacao(item.percentualJurosAntesSelic);
+        tr.appendChild(tdJurosAntes);
+
+        // 2. Taxa Legal
+        var tdTaxaLegal = document.createElement('td');
+        tdTaxaLegal.className = 'p-2 text-right font-mono';
+        if (item.percentualTaxaLegal !== undefined && item.percentualTaxaLegal !== null && item.percentualTaxaLegal !== 0) {
+            tdTaxaLegal.textContent = formatarPercentualAtualizacao(item.percentualTaxaLegal);
+        } else {
+            tdTaxaLegal.textContent = '-';
+        }
+        tr.appendChild(tdTaxaLegal);
+
+        // 3. % Juros até a atualização
+        var tdJurosTotal = document.createElement('td');
+        tdJurosTotal.className = 'p-2 text-right font-mono';
+        tdJurosTotal.textContent = formatarPercentualAtualizacao(item.percentualJurosTotal);
+        tr.appendChild(tdJurosTotal);
+
+        // 4. Juros de Mora (R$)
+        var tdJurosValor = document.createElement('td');
+        tdJurosValor.className = 'p-2 text-right font-mono font-semibold';
+        if (item.valorJuros !== undefined && item.valorJuros !== null) {
+            tdJurosValor.textContent = formatarMoedaAtualizacao(item.valorJuros);
+            if (item.valorJuros < 0) tdJurosValor.style.color = '#dc2626';
+            else if (item.valorJuros > 0) tdJurosValor.style.color = '#16a34a';
+            else tdJurosValor.style.color = 'inherit';
+        } else {
+            tdJurosValor.textContent = 'R$ 0,00';
+        }
+        tr.appendChild(tdJurosValor);
+
         tbody.appendChild(tr);
     });
 
-    // Atualiza totais
     if (totalOriginalEl) totalOriginalEl.textContent = formatarMoedaAtualizacao(totalOrig);
     if (totalCorrigidoEl) totalCorrigidoEl.textContent = formatarMoedaAtualizacao(totalCorr);
 
-    // Exibe container e resumo
     container.classList.remove('hidden');
     if (resumo) {
         if (totalCorr !== 0 || totalOrig !== 0) {
@@ -963,6 +1493,7 @@ function renderizarTabelaCorrigida(dados) {
     }
     atualizarBotoesAtualizacao();
 }
+
 function importarDiferencasGuia4ParaAtualizacao() {
     var status = document.getElementById('statusDiferencas');
 
@@ -980,7 +1511,6 @@ function importarDiferencasGuia4ParaAtualizacao() {
     }
 
     window.diferencasAtualizacaoAtual = dados;
-    // Mapeia para o formato esperado pela tabela (sem correção)
     var dadosTabela = dados.map(function(item) {
         return {
             competencia: item.competencia,
@@ -997,6 +1527,7 @@ function importarDiferencasGuia4ParaAtualizacao() {
     }
     atualizarBotoesAtualizacao();
 }
+
 function atualizarBotoesAtualizacao() {
     var btnCalc = document.getElementById('btnCalcularAtualizacao');
     if (btnCalc) {
@@ -1135,7 +1666,6 @@ function guia5ObterFatorMensal(indexador, competenciaISO) {
     return base[competenciaISO];
 }
 
-// === AJUSTE 4: função que verifica se deve usar o Manual MC2026 ===
 function guia5DeveUsarManualMC2026(parametros) {
     return !!(
         parametros &&
@@ -1158,7 +1688,6 @@ function guia5CalcularCoeficienteMensal(competenciaISO, atualizacaoISO, parametr
         };
     }
 
-    // === AJUSTE 4: uso do Manual apenas com flag explícita ===
     if (
         guia5DeveUsarManualMC2026(parametros) &&
         window.BASE_INDICE_PREVID_MC2026 &&
@@ -1202,12 +1731,91 @@ function guia5CalcularCoeficienteMensal(competenciaISO, atualizacaoISO, parametr
     };
 }
 
+// =====================================================================
+// FASE 1.8F-B1 – MOTOR INTERNO DE JUROS DETERMINÍSTICOS
+// =====================================================================
+
+function guia5ObterTaxaJurosDeterministica(indice) {
+    switch (indice) {
+        case 'SEM_JUROS':
+            return 0;
+        case 'JUROS_05_AM':
+            return 0.5;
+        case 'JUROS_1_AM':
+            return 1;
+        case 'JUROS_2_AA_EC136':
+            return 2 / 12; // 0.1666666666666667
+        default:
+            throw new Error('Índice de juros ainda não implementado nesta fase: ' + indice);
+    }
+}
+
+function guia5CalcularJurosDeterministicos(item, inicioJurosISO, atualizacaoISO, parametrosJuros) {
+    var competenciaISO = item.competenciaISO;
+
+    var inicioNum = Math.max(
+        guia5ISOParaNumero(competenciaISO),
+        guia5ISOParaNumero(inicioJurosISO)
+    );
+    var inicioEfetivoISO = String(Math.floor(inicioNum / 100)) + '-' + String(inicioNum % 100).padStart(2, '0');
+
+    var cursor = guia5ProximaCompetenciaISO(inicioEfetivoISO);
+    var fimNum = guia5ISOParaNumero(atualizacaoISO);
+
+    var criteriosJuros = [];
+    var detalhamentoJuros = [];
+    var totalTaxa = 0;
+    var meses = 0;
+
+    while (guia5ISOParaNumero(cursor) <= fimNum) {
+        var periodo = guia5ObterPeriodoDoEncadeamento(parametrosJuros, cursor);
+        if (!periodo) {
+            throw new Error('Não há período de juros definido para a competência ' + guia5ISOParaBR(cursor) + '.');
+        }
+
+        var taxa = guia5ObterTaxaJurosDeterministica(periodo.indice);
+        totalTaxa += taxa;
+        meses++;
+
+        if (criteriosJuros.indexOf(periodo.indice) === -1) {
+            criteriosJuros.push(periodo.indice);
+        }
+
+        detalhamentoJuros.push({
+            competenciaISO: cursor,
+            indice: periodo.indice,
+            taxaPercentual: taxa
+        });
+
+        cursor = guia5ProximaCompetenciaISO(cursor);
+    }
+
+    var valorJuros = item.valorCorrigido * totalTaxa / 100;
+
+    return {
+        inicioJurosEfetivoISO: inicioEfetivoISO,
+        fimJurosISO: atualizacaoISO,
+        criteriosJuros: criteriosJuros,
+        quantidadeMesesJuros: meses,
+        percentualJurosAntesSelic: totalTaxa,
+        percentualTaxaLegal: 0,
+        percentualJurosTotal: totalTaxa,
+        valorJuros: valorJuros,
+        detalhamentoJuros: detalhamentoJuros
+    };
+}
+
+// =====================================================================
+// FUNÇÃO PRINCIPAL DE CÁLCULO DA ATUALIZAÇÃO (MODIFICADA)
+// =====================================================================
+
 function calcularAtualizacaoGuia5() {
     var status = document.getElementById('statusAtualizacao');
     var container = document.getElementById('containerTabelaDiferencas');
     var tbody = document.getElementById('corpoDiferencasAtualizacao');
     var totalOriginalEl = document.getElementById('totalOriginalAtualizacao');
     var totalCorrigidoEl = document.getElementById('totalCorrigidoAtualizacao');
+    var totalJurosEl = document.getElementById('totalJurosAtualizacao');
     var resumo = document.getElementById('resumoAtualizacao');
 
     if (status) {
@@ -1234,7 +1842,6 @@ function calcularAtualizacaoGuia5() {
     var dataAtualizacaoInput = document.getElementById('dataAtualizacao2');
     var dataAtualizacaoBR = dataAtualizacaoInput ? dataAtualizacaoInput.value.trim() : '';
     var atualizacaoISO = guia5CompetenciaParaISO(dataAtualizacaoBR);
-
     if (!atualizacaoISO) {
         if (status) {
             status.textContent = '⚠️ Informe uma data de atualização válida no formato MM/AAAA.';
@@ -1242,13 +1849,73 @@ function calcularAtualizacaoGuia5() {
         }
         return;
     }
+    var atualizacaoNum = guia5ISOParaNumero(atualizacaoISO);
+
+    // =============================================================
+    // Filtro temporal: excluir parcelas posteriores à data da conta
+    // =============================================================
+    var diferencasFiltradas = [];
+    var excluidas = 0;
+    for (var i = 0; i < window.diferencasAtualizacaoAtual.length; i++) {
+        var item = window.diferencasAtualizacaoAtual[i];
+        var competenciaISO = guia5CompetenciaParaISO(item.competencia);
+        if (!competenciaISO) {
+            window.resultadosAtualizacao = null;
+            if (resumo) resumo.classList.add('hidden');
+            if (container) container.classList.add('hidden');
+            if (totalOriginalEl) totalOriginalEl.textContent = 'R$ 0,00';
+            if (totalCorrigidoEl) totalCorrigidoEl.textContent = 'R$ 0,00';
+            if (totalJurosEl) totalJurosEl.textContent = 'R$ 0,00';
+            if (status) {
+                status.textContent = '❌ Erro na atualização: Competência inválida: ' + item.competencia;
+                status.className = 'text-sm text-red-700';
+            }
+            return;
+        }
+        if (guia5ISOParaNumero(competenciaISO) <= atualizacaoNum) {
+            diferencasFiltradas.push(item);
+        } else {
+            excluidas++;
+        }
+    }
+
+    if (diferencasFiltradas.length === 0) {
+        window.resultadosAtualizacao = null;
+        if (resumo) resumo.classList.add('hidden');
+        if (container) container.classList.add('hidden');
+        if (totalOriginalEl) totalOriginalEl.textContent = 'R$ 0,00';
+        if (totalCorrigidoEl) totalCorrigidoEl.textContent = 'R$ 0,00';
+        if (totalJurosEl) totalJurosEl.textContent = 'R$ 0,00';
+        if (status) {
+            status.textContent = '❌ Nenhuma parcela possui competência igual ou anterior à Data de Atualização.';
+            status.className = 'text-sm text-red-700';
+        }
+        return;
+    }
+
+    var inicioJurosBR = '';
+    var inicioJurosISO = null;
+    if (window.parametrosJurosAtual) {
+        var inicioJurosInput = document.getElementById('inicioJuros2');
+        inicioJurosBR = inicioJurosInput ? inicioJurosInput.value.trim() : '';
+        inicioJurosISO = guia5CompetenciaParaISO(inicioJurosBR);
+        if (!inicioJurosISO) {
+            if (status) {
+                status.textContent = '⚠️ Informe um Início dos Juros válido no formato MM/AAAA.';
+                status.className = 'text-sm text-amber-700';
+            }
+            return;
+        }
+    }
 
     try {
         var totalOriginal = 0;
         var totalCorrigido = 0;
+        var totalJuros = 0;
         var resultados = [];
 
-        var dadosAtualizados = window.diferencasAtualizacaoAtual.map(function(item) {
+        for (var idx = 0; idx < diferencasFiltradas.length; idx++) {
+            var item = diferencasFiltradas[idx];
             var competenciaISO = guia5CompetenciaParaISO(item.competencia);
             if (!competenciaISO) {
                 throw new Error('Competência inválida: ' + item.competencia);
@@ -1274,29 +1941,61 @@ function calcularAtualizacaoGuia5() {
                 coeficiente: resultadoCoef.coeficiente,
                 valorCorrigido: valorCorrigido
             };
-            resultados.push(obj);
-            return obj;
-        });
 
-        // Armazena os resultados para uso futuro (juros, relatório, exportação)
+            if (window.parametrosJurosAtual) {
+                var juros = guia5CalcularJurosDeterministicos(obj, inicioJurosISO, atualizacaoISO, window.parametrosJurosAtual);
+                obj.inicioJurosEfetivoISO = juros.inicioJurosEfetivoISO;
+                obj.inicioJurosEfetivo = guia5ISOParaBR(juros.inicioJurosEfetivoISO);
+                obj.fimJurosISO = juros.fimJurosISO;
+                obj.criteriosJuros = juros.criteriosJuros;
+                obj.quantidadeMesesJuros = juros.quantidadeMesesJuros;
+                obj.percentualJurosAntesSelic = juros.percentualJurosAntesSelic;
+                obj.percentualTaxaLegal = juros.percentualTaxaLegal;
+                obj.percentualJurosTotal = juros.percentualJurosTotal;
+                obj.valorJuros = juros.valorJuros;
+                obj.detalhamentoJuros = juros.detalhamentoJuros;
+
+                totalJuros += obj.valorJuros;
+            } else {
+                obj.inicioJurosEfetivoISO = null;
+                obj.inicioJurosEfetivo = null;
+                obj.fimJurosISO = null;
+                obj.criteriosJuros = [];
+                obj.quantidadeMesesJuros = 0;
+                obj.percentualJurosAntesSelic = 0;
+                obj.percentualTaxaLegal = 0;
+                obj.percentualJurosTotal = 0;
+                obj.valorJuros = 0;
+                obj.detalhamentoJuros = [];
+            }
+
+            resultados.push(obj);
+        }
+
         window.resultadosAtualizacao = {
             dataAtualizacao: dataAtualizacaoBR,
             dataAtualizacaoISO: atualizacaoISO,
             parametrosCorrecao: window.parametrosCorrecaoAtual,
+            parametrosJuros: window.parametrosJurosAtual || null,
             totalOriginal: totalOriginal,
             totalCorrigido: totalCorrigido,
+            totalJuros: totalJuros,
             itens: resultados
         };
 
-        // Renderiza a tabela única com as colunas completas
-        renderizarTabelaCorrigida(dadosAtualizados);
+        renderizarTabelaCorrigida(resultados);
 
         if (totalOriginalEl) totalOriginalEl.textContent = formatarMoedaAtualizacao(totalOriginal);
         if (totalCorrigidoEl) totalCorrigidoEl.textContent = formatarMoedaAtualizacao(totalCorrigido);
+        if (totalJurosEl) totalJurosEl.textContent = formatarMoedaAtualizacao(totalJuros);
         if (resumo) resumo.classList.remove('hidden');
 
+        var msg = '✅ Atualização calculada com sucesso.';
+        if (excluidas > 0) {
+            msg += ' ' + excluidas + ' parcela(s) posterior(es) à data da conta foram desconsideradas.';
+        }
         if (status) {
-            status.textContent = '✅ Atualização calculada com sucesso.';
+            status.textContent = msg;
             status.className = 'text-sm text-green-700';
         }
 
@@ -1310,7 +2009,6 @@ function calcularAtualizacaoGuia5() {
     }
 }
 
-// Expõe a função principal globalmente
 window.calcularAtualizacaoGuia5 = calcularAtualizacaoGuia5;
 
 // =====================================================================
@@ -1319,7 +2017,6 @@ window.calcularAtualizacaoGuia5 = calcularAtualizacaoGuia5;
 document.addEventListener('DOMContentLoaded', function() {
     criarModalAdmin();
 
-    // Atalho CTRL+SHIFT+E
     document.addEventListener('keydown', function(e) {
         var tag = e.target.tagName;
         if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
@@ -1340,12 +2037,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         'warning'
                     );
                 }
-                adminAtualizarSelectsIndice();
             }
         }
     });
 
-    // Botões da Guia 5
     var btnCorrecao = document.getElementById('btnCarregarCorrecao');
     var fileCorrecao = document.getElementById('fileInputCorrecao');
     if (btnCorrecao && fileCorrecao) {
@@ -1361,22 +2056,21 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    var btnJuros = document.getElementById('btnCarregarJuros');
-    var fileJuros = document.getElementById('fileInputJuros');
-    if (btnJuros && fileJuros) {
-        btnJuros.addEventListener('click', function() {
-            fileJuros.click();
+    var btnJurosSelic = document.getElementById('btnCarregarJurosSelic');
+    var fileJurosSelic = document.getElementById('fileInputJurosSelic');
+    if (btnJurosSelic && fileJurosSelic) {
+        btnJurosSelic.addEventListener('click', function() {
+            fileJurosSelic.click();
         });
-        fileJuros.addEventListener('change', function(e) {
+        fileJurosSelic.addEventListener('change', function(e) {
             var file = e.target.files[0];
             if (file) {
-                adminCarregarParametroGuia5(file, 'juros_mora');
+                adminCarregarParametroGuia5(file, 'juros_selic');
             }
             this.value = '';
         });
     }
 
-    // Botão Importar Diferenças
     var btnImportarDiferencas = document.getElementById('btnImportarDiferencas');
     if (btnImportarDiferencas) {
         btnImportarDiferencas.addEventListener('click', function() {
@@ -1384,7 +2078,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Botão Calcular Atualização
     var btnCalcular = document.getElementById('btnCalcularAtualizacao');
     if (btnCalcular) {
         btnCalcular.addEventListener('click', function() {
@@ -1392,17 +2085,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ============================================================
-    // LISTENERS PARA RESET AUTOMÁTICO DAS DIFERENÇAS
-    // ============================================================
     function configurarListenerReset(containerId, eventos) {
         var container = document.getElementById(containerId);
         if (!container) return;
         eventos.forEach(function(evt) {
             container.addEventListener(evt, function(e) {
-                // Ignora mudanças na própria Guia 5
                 if (containerId === 'guia-atualizacao') return;
-                // Se houver dados importados, limpa
                 if (window.diferencasAtualizacaoAtual) {
                     limparDiferencasAtualizacao(
                         '⚠️ Diferenças não importadas após alteração dos dados. Reimporte a Guia 4. Parâmetros de correção e juros mantidos.'
@@ -1412,16 +2100,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Guia 1 – Entradas
     configurarListenerReset('guia-entradas', ['input', 'change']);
-
-    // Guia 3 – Benefícios Recebidos
     configurarListenerReset('guia-beneficios-recebidos', ['input', 'change']);
-
-    // Guia 4 – Diferenças (modo de compensação, edições manuais, etc.)
     configurarListenerReset('guia-diferencas', ['input', 'change']);
 
-    // Sincroniza datas ao entrar na Guia 5
     document.querySelectorAll('.nav-guia button').forEach(function(btn) {
         btn.addEventListener('click', function() {
             if (this.dataset.guia === 'atualizacao') {
@@ -1435,7 +2117,6 @@ document.addEventListener('DOMContentLoaded', function() {
         sincronizarParametrosAtualizacao();
     }
 
-    // Exposição global
     window.coletarDiferencasParaAtualizacao = coletarDiferencasParaAtualizacao;
     window.sincronizarParametrosAtualizacao = sincronizarParametrosAtualizacao;
     window.importarDiferencasGuia4ParaAtualizacao = importarDiferencasGuia4ParaAtualizacao;
