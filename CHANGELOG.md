@@ -1,731 +1,581 @@
 # Changelog
 
+Todas as alterações relevantes do **ContadJus** e do módulo **LiquidaCalc** são registradas neste arquivo.
+
+O projeto utiliza fases funcionais para documentar a evolução incremental. Cada fase somente é marcada como **homologada** após os testes de aceitação e regressão correspondentes.
+
+## Convenções
+
+- **Adicionado:** nova funcionalidade, estrutura ou arquivo.
+- **Alterado:** mudança intencional de comportamento ou apresentação.
+- **Corrigido:** resolução de erro ou regressão.
+- **Preservado:** componentes que não sofreram alteração na fase.
+- **Homologação:** testes executados e resultados aprovados.
+- **Pendente:** funcionalidade preparada estruturalmente, mas ainda não implementada matematicamente.
+
 ---
 
+## [3.5-alpha] Fase 1.8F-B4: arquivos personalizados e status detalhados
 
+**Data:** 06/08/2026  
+**Status:** Homologada
 
-# Versão 3.5-alpha – Fase 1.8E – Plataforma ContadJus, Autenticação e Motor de Correção Monetária (03/08/2026)
+### Adicionado
 
-## Resumo da Versão
+- Extensão `.corr` para encadeamentos de correção monetária.
+- Extensão `.jur` para pacotes unificados de Juros e SELIC.
+- Extensão `.contadjus` para casos completos.
+- Novos padrões de nomes:
 
-Esta versão consolida a conclusão da Fase 1.8E, abrangendo dois marcos relevantes do projeto:
+```text
+CORRE-NOME.corr
+JUROS-NOME.jur
+DADOS-AUTOR-IDENTIFICADOR.contadjus
+```
+
+- Identificador do caso obtido dos últimos seis algarismos do primeiro bloco do processo CNJ.
+- Sanitização de nomes com remoção de acentos, uso de maiúsculas e separação por hífens.
+- Tratamento de apóstrofos na sanitização.
+- Valores substitutos:
+
+```text
+SEM-NOME
+SEM-AUTOR
+SEM-PROCESSO
+```
+
+- Exibição dos intervalos de cada indexador nos cartões da Guia 5.
+- Nomes amigáveis dos índices nos status.
+- Símbolo `►` para identificar visualmente cada novo período.
+- Quebra automática dos blocos de períodos conforme a largura disponível.
+- Exibição de período sem data final como `MM/AAAA em diante`.
+
+### Alterado
+
+- Botão `Carregar JSON de Correção` renomeado para `Carregar Parâmetros de Correção`.
+- Botão `Carregar JSON de Juros e SELIC` renomeado para `Carregar Parâmetros de Juros e SELIC`.
+- Cartões de status ampliados para ocupar o espaço disponível ao lado dos botões.
+- Layout responsivo com empilhamento do botão e do status em telas menores.
+- Informações principais mantidas em fonte normal e intervalos exibidos em fonte menor.
+- Juros e SELIC mantidos em blocos visuais separados.
+- Status restaurados com a mesma apresentação após importação do caso ou criação de novo caso.
+
+### Compatibilidade
+
+Continuam aceitos:
+
+```text
+.json
+.corr
+.jur
+.contadjus
+```
+
+O reconhecimento permanece baseado no conteúdo interno, e não apenas na extensão.
+
+### Segurança
+
+- Dados provenientes dos arquivos são renderizados com `document.createElement()` e `textContent`.
+- Nenhum nome, descrição, índice ou período importado é executado como HTML.
+
+### Homologação
+
+- Exportação de `CORRE-PREVID-2026.corr` aprovada.
+- Exportação de `JUROS-PACOTE-JUROS-05-AM.jur` aprovada.
+- Exportação de `DADOS-JOAO-DA-SILVA-001234.contadjus` aprovada.
+- Sanitização de `Maria d'Ávila Neto` para `MARIA-D-AVILA-NETO` aprovada.
+- Importação de `.corr`, `.jur` e `.contadjus` aprovada.
+- Compatibilidade com arquivos antigos `.json` aprovada.
+- Cartões ampliados e responsivos aprovados.
+- Intervalos dos encadeamentos aprovados.
+- Restauração dos parâmetros pelo caso completo aprovada.
+- Todos os testes de aceitação passaram.
+
+---
+
+## [3.5-alpha] Fase 1.8F-B3: corte temporal pela data da conta
+
+**Data:** 06/08/2026  
+**Status:** Homologada
+
+### Adicionado
+
+- Corte temporal da memória da Guia 5 pela Data de Atualização.
+- Contagem informativa das parcelas posteriores desconsideradas.
+- Tratamento controlado para competência inválida durante a filtragem.
+- Tratamento do caso em que nenhuma parcela é igual ou anterior à data da conta.
+
+### Alterado
+
+Somente parcelas com:
+
+```text
+competência <= Data de Atualização
+```
+
+passam a integrar:
+
+- `window.resultadosAtualizacao.itens`;
+- Total original;
+- Total corrigido;
+- Total dos Juros de Mora;
+- memória renderizada na Guia 5.
+
+As diferenças importadas permanecem integralmente preservadas em:
+
+```javascript
+window.diferencasAtualizacaoAtual
+```
+
+### Homologação
+
+Cenário testado:
+
+```text
+Diferenças importadas: 418
+Itens calculados:      358
+Parcelas excluídas:     60
+```
+
+Foi confirmado que nenhum item calculado possuía competência posterior à Data de Atualização.
+
+O tratamento atual do 13º foi preservado:
+
+```text
+13º/AAAA = competência 12/AAAA
+```
+
+Todos os testes de aceitação passaram.
+
+---
+
+## [3.5-alpha] Fase 1.8F-B2: exibição auditável dos juros
+
+**Data:** 06/08/2026  
+**Status:** Homologada
+
+### Adicionado
+
+Quatro colunas na memória da Guia 5:
+
+1. `% Juros antes da SELIC`;
+2. `Taxa Legal`;
+3. `% Juros até a atualização`;
+4. `Juros de Mora (R$)`.
+
+Adicionado ao resumo:
+
+```text
+Total dos Juros de Mora
+```
+
+### Alterado
+
+- Percentuais exibidos com quatro casas decimais.
+- Valores monetários exibidos com duas casas decimais.
+- Precisão interna preservada.
+- Taxa Legal exibida como `-` enquanto o motor correspondente não estiver implementado.
+- Tabela mantida em contêiner com rolagem horizontal.
+
+### Homologação
+
+- Percentuais visuais coincidiram com os resultados internos.
+- Valores dos juros por parcela coincidiram com a incidência sobre o valor corrigido.
+- Total registrado coincidiu com a soma de `item.valorJuros`.
+- Total visual coincidiu com o total interno arredondado para centavos.
+- Correção monetária isolada permaneceu funcional.
+- Todos os testes de aceitação passaram.
+
+---
+
+## [3.5-alpha] Fase 1.8F-B1: motor de juros determinísticos
+
+**Data:** 06/08/2026  
+**Status:** Homologada
+
+### Adicionado
+
+Motor interno dos critérios:
+
+```text
+SEM_JUROS
+JUROS_05_AM
+JUROS_1_AM
+JUROS_2_AA_EC136
+```
+
+Novos campos por parcela:
+
+```javascript
+inicioJurosEfetivoISO
+inicioJurosEfetivo
+fimJurosISO
+criteriosJuros
+quantidadeMesesJuros
+percentualJurosAntesSelic
+percentualTaxaLegal
+percentualJurosTotal
+valorJuros
+detalhamentoJuros
+```
+
+Novo total global:
+
+```javascript
+window.resultadosAtualizacao.totalJuros
+```
+
+### Regras homologadas
+
+- Juros simples.
+- Incidência sobre o valor corrigido.
+- Exclusão do mês inicial.
+- Inclusão do mês da conta.
+- Início efetivo pelo maior valor entre a competência da parcela e o campo Início dos Juros.
+- Repetição do percentual para parcelas anteriores ou iguais ao início da mora.
+- Redução mensal para parcelas posteriores.
+- Lacuna no encadeamento tratada como erro.
+- `SEM_JUROS` tratado como período expresso com taxa zero.
+
+### Taxas
+
+```text
+SEM_JUROS        = 0% ao mês
+JUROS_05_AM      = 0,5% ao mês
+JUROS_1_AM       = 1% ao mês
+JUROS_2_AA_EC136 = 2% ao ano ÷ 12, linearmente
+```
+
+### Testes homologados
+
+#### Juros de 0,5% ao mês
+
+```text
+12/2019 → 23 meses → 11,5%
+01/2020 → 23 meses → 11,5%
+02/2020 → 22 meses → 11,0%
+03/2020 → 21 meses → 10,5%
+10/2021 →  2 meses →  1,0%
+11/2021 →  1 mês   →  0,5%
+12/2021 →  0 meses →  0,0%
+```
+
+#### Juros de 1% ao mês
+
+```text
+12/2019 → 23 meses → 23%
+01/2020 → 23 meses → 23%
+02/2020 → 22 meses → 22%
+03/2020 → 21 meses → 21%
+10/2021 →  2 meses →  2%
+11/2021 →  1 mês   →  1%
+12/2021 →  0 meses →  0%
+```
+
+#### Juros de 2% ao ano
+
+```text
+12/2019 → 12 meses → 2,0000%
+01/2020 → 12 meses → 2,0000%
+02/2020 → 11 meses → 1,8333333333%
+12/2020 →  1 mês   → 0,1666666667%
+01/2021 →  0 meses → 0%
+```
+
+#### Sem juros
+
+- Quantidade de meses preservada para auditoria.
+- Percentual igual a zero.
+- Valor dos juros igual a zero.
+- `criteriosJuros` contendo `SEM_JUROS` quando houve percurso mensal.
+
+Todos os testes de aceitação passaram.
+
+---
+
+## [3.5-alpha] Fase 1.8F-A2: pacote unificado de Juros e SELIC
+
+**Data:** 05/08/2026  
+**Status:** Homologada
+
+### Adicionado
+
+- Tipo administrativo principal `Juros e SELIC`.
+- Tabela interna de Juros de Mora.
+- Tabela interna de SELIC.
+- Pacote único com blocos independentes `juros` e `selic`.
+- Carregamento unificado na Guia 5.
+- Status unificado `statusJurosSelic`.
+- Metadados `nomePacote`, `descricaoPacote` e `dataCriacaoPacote` nos blocos internos.
+- Validação estrutural dos períodos com `Array.isArray()`.
+- Bloqueio do pacote totalmente vazio.
+
+### Combinações permitidas
+
+- somente Juros;
+- somente SELIC;
+- Juros e SELIC.
+
+### Alterado
+
+- Taxa Legal e Taxa Legal Previdenciária mantidas como índices de Juros de Mora.
+- SELIC mantida como índice exclusivo da tabela SELIC.
+- Parâmetros preservados separadamente em:
+
+```javascript
+window.parametrosCorrecaoAtual
+window.parametrosJurosAtual
+window.parametrosSelicAtual
+```
+
+- Persistência do caso preservada em:
+
+```json
+{
+  "parametros": {
+    "correcao": {},
+    "juros": {},
+    "selic": {}
+  }
+}
+```
+
+### Compatibilidade
+
+Mantida importação dos formatos:
+
+```text
+parametros_atualizacao + correcao_monetaria
+parametros_atualizacao + juros_mora
+parametros_atualizacao + selic
+parametros_juros_selic + juros_selic
+```
+
+### Homologação
+
+- Pacote somente com Juros aprovado.
+- Pacote somente com SELIC aprovado.
+- Pacote com Juros e SELIC aprovado.
+- Pacote vazio bloqueado.
+- Carregamento unificado aprovado.
+- Importação de formatos antigos aprovada.
+- Correção monetária preservada.
+- Todos os testes de aceitação passaram.
+
+---
+
+## [3.5-alpha] Fase 1.8F-A: infraestrutura de Juros e SELIC
+
+**Data:** 05/08/2026  
+**Status:** Homologada
+
+### Adicionado
+
+- Arquivo `data/indexadores-juros.js`.
+- Catálogo `window.CATALOGO_INDEXADORES_JUROS`.
+- Base `window.BASE_INDEXADORES_JUROS`.
+- Critérios determinísticos, históricos e mistos.
+- Estrutura inicial de carregamento e persistência dos parâmetros.
+
+### Critérios cadastrados
+
+```text
+SEM_JUROS
+JUROS_05_AM
+JUROS_1_AM
+JUROS_2_AA_EC136
+JUROS_POUPANCA
+TAXA_LEGAL
+TAXA_LEGAL_PREVIDENCIARIA
+SELIC
+```
+
+### Observação
+
+Nesta fase foi criada a infraestrutura. Os cálculos foram implementados gradualmente nas fases posteriores.
+
+---
+
+## [3.5-alpha] Fase 1.8E: motor de correção monetária e plataforma ContadJus
+
+**Período:** 02/08/2026 a 04/08/2026  
+**Status:** Homologada para os cenários operacionais testados
 
 ### Plataforma ContadJus
 
-- Implantação da infraestrutura inicial da plataforma ContadJus.
-- Registro e configuração do domínio oficial `contadjus.com.br`.
-- Implementação da autenticação de usuários utilizando Supabase Auth.
-- Criação da primeira camada de controle de acesso ao sistema.
+#### Adicionado
 
-### Motor de Correção Monetária
+- domínio oficial `contadjus.com.br`;
+- hospedagem no GitHub Pages;
+- autenticação por Supabase Auth;
+- login, logout, persistência de sessão e recuperação de senha;
+- arquivos `js/auth.js`, `js/supabase.js` e `css/auth.css`;
+- namespace global `CONTADJUS`.
 
-- Consolidação da infraestrutura da Guia 5.
-- Implementação operacional da UFIR.
-- Separação entre UFIR operacional e UFIR histórica.
-- Validação da linha de correção monetária perante sistemas de referência.
-- Implementação da competência especial de transição entre UFIR e IPCA-E.
-- Conclusão da primeira versão funcional do motor de atualização monetária.
+#### Preservado
+
+- processamento dos cálculos no navegador;
+- independência entre autenticação e motores matemáticos;
+- motor previdenciário e regras existentes.
+
+### Motor de correção monetária
+
+#### Adicionado
+
+- primeira versão funcional do motor genérico da Guia 5;
+- leitura de encadeamentos de correção;
+- acumulação de fatores mensais;
+- índice operacional UFIR;
+- índice histórico `UFIR_NOMINAL` para auditoria;
+- índice especial opcional `IPCAE_CJF_2000` para transição;
+- suporte a diferentes encadeamentos sem alteração do motor.
+
+#### Homologação
+
+- coeficientes a partir de 07/1994 compatíveis com os sistemas de referência utilizados;
+- resultados finais compatíveis com ProjefWeb e Fábrica de Cálculos nos cenários testados;
+- encadeamentos configurados conforme diferentes manuais reproduzidos pelo mesmo motor genérico;
+- diferenças residuais limitadas a precisão, arredondamento ou truncamento, sem divergência material nos resultados finais testados.
+
+### Pendência histórica
+
+O intervalo entre `01/1992` e `06/1994` permanece registrado para validação histórica complementar da UFIR.
+
+> Encadeamentos configurados segundo diferentes edições de manuais não são motores separados. Todos são interpretados pelo mesmo motor genérico de correção monetária.
 
 ---
 
-## Fase 1.8E – Implementação e Homologação da UFIR (03/08/2026)
+## [3.4-alpha] Fase 1.8D: espelho das diferenças na Guia 5
+
+**Data:** 30/07/2026  
+**Status:** Homologada
 
 ### Adicionado
 
-- Implementado o índice operacional **UFIR (Índice de Correção)**.
-- Implementado o índice histórico **UFIR_NOMINAL (Auditoria)**.
-- Criada separação definitiva entre:
-  - índice utilizado nos cálculos;
-  - valores históricos utilizados para auditoria.
-- Implementada integração da UFIR à base de atualização monetária.
-- Implementada exibição diferenciada da UFIR operacional e da UFIR histórica nos componentes administrativos.
+- seção Diferenças da Guia 4 na Guia 5;
+- botão Importar Diferenças da Guia 4;
+- `window.diferencasAtualizacaoAtual`;
+- tabela inicial de Competência e Diferença Original;
+- reset automático após alterações nas Guias 1, 3 ou 4.
 
-### Alterado
+### Preservado
 
-- A UFIR passou a possuir tratamento próprio na base de indexadores.
-- A atualização monetária passou a utilizar fatores mensais específicos para UFIR.
-- Eliminada a dependência de conversão automática dos valores nominais históricos.
-- Preservada integralmente a base histórica de rastreabilidade em:
-  - `UFIR_NOMINAL`.
+- parâmetros carregados na Guia 5;
+- lógica da Guia 4;
+- motor previdenciário;
+- estrutura do caso.
 
-### Implementação da Transição UFIR → IPCA-E (04/08/2026)
+---
 
-Durante os testes comparativos foram identificadas divergências entre os coeficientes produzidos pelo ContadJus e aqueles observados em sistemas de referência para competências históricas próximas da extinção da UFIR.
+## [3.4-alpha] Fase 1.8C: integração administrativa com a base de indexadores
 
-A análise do Manual de Cálculos da Justiça Federal indicou a existência da seguinte observação:
+**Data:** 30/07/2026  
+**Status:** Homologada
 
-> "O percentual a ser utilizado em janeiro de 2001 deverá ser o IPCA-E acumulado no período de janeiro a dezembro de 2000. A partir de janeiro de 2001 deverá ser utilizado o IPCA-E mensal."
+### Adicionado
 
-Para permitir a reprodução de metodologias observadas em sistemas de cálculo judiciais, foi criado o índice especial:
+- consulta dinâmica ao catálogo de indexadores;
+- filtro por tipo de parâmetro;
+- preservação auditável de índices inexistentes ou incompatíveis em arquivos antigos;
+- nomes amigáveis e códigos técnicos nos seletores.
 
-  - `IPCAE_CJF_2000`
-  
-  destinado exclusivamente à competência:
-  
-  - `12/2000`
+### Corrigido
 
-Esse índice representa uma alternativa de transição entre a UFIR e o IPCA-E mensal, preservando simultaneamente a série histórica original do IPCA-E.
+- substituição silenciosa de índice importado;
+- incompatibilidades entre correção e juros;
+- erro de sintaxe após ajuste da importação;
+- abertura do modal administrativo.
 
-A utilização do índice é opcional e depende do encadeamento escolhido pelo usuário.
+---
 
-  Exemplo:
-  
-  ```text
-  UFIR
-  ↓
-  IPCAE_CJF_2000
-  ↓
-  IPCA-E
+## [3.4-alpha] Fase 1.8B: base de indexadores de atualização
+
+**Data:** 29/07/2026  
+**Status:** Homologada estruturalmente
+
+### Adicionado
+
+- `data/indexadores.js`;
+- `window.BASE_INDEXADORES_ATUALIZACAO`;
+- `window.CATALOGO_INDEXADORES_ATUALIZACAO`;
+- `window.INDEXADORES_ATUALIZACAO`;
+- dados iniciais de INPC, IPCA-E e IPCA;
+- estrutura preparada para expansão dos demais índices.
+
+---
+
+## [3.4-alpha] Fase 1.8A: infraestrutura de parâmetros da Guia 5
+
+**Data:** 29/07/2026  
+**Status:** Homologada
+
+### Adicionado
+
+- infraestrutura inicial da Guia 5;
+- modal administrativo aberto por `Ctrl + Shift + E`;
+- criação, validação, importação e exportação de encadeamentos;
+- variáveis globais de correção, Juros e SELIC;
+- sincronização das datas entre as Guias 1 e 5;
+- validação de sobreposição e período aberto.
+
+---
+
+## [3.3] Fase 1.7D2: abono anual e ano final aberto
+
+**Data:** 28/07/2026  
+**Status:** Homologada
+
+### Adicionado
+
+- linhas `13º/AAAA` na Guia 4;
+- cálculo de avos pela regra dos 15 dias;
+- suporte ao primeiro 13º;
+- suporte a benefícios baseados em salário mínimo;
+- opção de 13º proporcional no ano final aberto;
+- persistência da nova opção no caso;
+- cálculo individualizado do 13º devido e recebido.
+
+### Corrigido
+
+- base do primeiro 13º em memórias resumidas;
+- tratamento do ano final aberto;
+- DCB de benefícios recebidos;
+- uso indevido da DIP como DCB;
+- restauração das competências de 13º;
+- recursão em relatórios;
+- compatibilidade visual entre navegadores.
+
+---
+
+## Funcionalidades pendentes
+
+Os seguintes motores ainda não estão implementados:
+
+```text
+JUROS_POUPANCA
+TAXA_LEGAL
+TAXA_LEGAL_PREVIDENCIARIA
+SELIC
 ```
 
-### Testes e Validação
+Também permanecem pendentes:
 
-Foram realizados testes comparativos utilizando:
-
-- Manual de Cálculos da Justiça Federal (edição 2022);
-- Sistema ProjefWeb;
-- Planilhas da Fábrica de Cálculos.
-
-## Resultado dos Testes
-
-### Competências a partir de 07/1994
-
-  ✅ Coeficientes compatíveis com os sistemas de referência.
-  ✅ Valores finais coincidentes com ProjefWeb.
-  ✅ Valores finais coincidentes com Fábrica de Cálculos.
-  ✅ Resultados compatíveis com a linha de correção monetária do Manual de Cálculos.
-  ✅ Linha considerada operacionalmente válida para utilização prática.
-
-### Comparações com a Fábrica de Cálculos
-
-Após a implementação da competência especial de transição IPCAE_CJF_2000, os coeficientes calculados pelo ContadJus passaram a apresentar aderência muito elevada aos coeficientes produzidos pela Fábrica de Cálculos.
-As diferenças remanescentes ficaram limitadas a valores residuais, compatíveis com:
-
-  - critérios distintos de arredondamento;
-  - quantidade de casas decimais utilizadas internamente;
-  - formas de acumulação e truncamento adotadas pelos sistemas comparados.
-  Não foi identificado impacto material nos resultados finais decorrente dessas diferenças residuais.
-  Competências anteriores a 07/1994
-  Foi identificada divergência residual em relação aos coeficientes esperados do Manual.
-
-### Observações:
-
-  - A divergência restringe-se ao período compreendido entre 01/1992 e 06/1994.
-  - O período posterior a 07/1994 encontra-se validado.
-  - A divergência não interfere na utilização operacional da funcionalidade.
-  - O trecho permanecerá registrado para futura validação histórica.
-  - A ocorrência prática desse intervalo é extremamente reduzida na rotina atual da Contadoria Judicial.
-  Homologação
-
-Após testes comparativos realizados com o Manual de Cálculos da Justiça Federal (2022), ProjefWeb e Fábrica de Cálculos, a implementação da UFIR apresentou aderência prática aos sistemas de referência para competências a partir de 07/1994.
-Status atual
-
-  ✅ Funcional para competências a partir de 07/1994.
-  ✅ Integrada ao motor de atualização monetária.
-  ✅ Disponível para utilização em encadeamentos.
-  ✅ Testada mediante comparação com ProjefWeb.
-  ✅ Testada mediante comparação com Fábrica de Cálculos.
-  ✅ Compatível com a linha de correção monetária utilizada nos cenários homologados.
-  ✅ Compatível com a alternativa de transição UFIR → IPCAE_CJF_2000 → IPCA-E.
-  ⚠️ A implementação ainda não pode ser considerada integralmente concluída para a série normativa completa da UFIR.
-  ⚠️ O Manual de Cálculos estabelece a utilização da UFIR no período compreendido entre 01/1992 e 12/2000.
-  ⚠️ O trecho compreendido entre 01/1992 e 06/1994 permanece registrado para validação histórica complementar.
-
-### Conclusão
-
-A implementação encontra-se homologada para utilização operacional em competências a partir de 07/1994.
-Os resultados produzidos pelo ContadJus apresentam coincidência prática com ProjefWeb e Fábrica de Cálculos nos cenários testados.
-A criação do índice especial IPCAE_CJF_2000 permitiu reproduzir metodologias de transição observadas em sistemas de referência, sem alterar a série mensal original do IPCA-E.
-Permanece pendente apenas a validação histórica específica do período compreendido entre 01/1992 e 06/1994, necessária para considerar totalmente encerrada a implementação normativa da UFIR no intervalo integral previsto pelo Manual de Cálculos da Justiça Federal.
-
-### Homologação Complementar – Manuais de Cálculos 2022 e 2026
-
-Foram realizados testes adicionais comparando os coeficientes produzidos pelo ContadJus com:
-
-- ProjefWeb;
-- Fábrica de Cálculos;
-- Base interna de indexadores homologados.
-
-Foram avaliadas as linhas de atualização monetária dos:
-
-- Manual de Cálculos da Justiça Federal (edição 2022);
-- Manual de Cálculos da Justiça Federal (edição 2026).
-
-Resultados observados:
-
-✅ MC 2022 reproduzido com sucesso.
-
-✅ MC 2026 reproduzido com sucesso.
-
-✅ Coeficientes previdenciários compatíveis com os sistemas de referência.
-
-✅ Coeficientes de ações condenatórias em geral compatíveis com os sistemas de referência.
-
-✅ Diferenças limitadas a casas decimais residuais, compatíveis com critérios de arredondamento, truncamento e precisão interna.
-
-✅ Nenhuma divergência material identificada nos resultados finais.
-
-A validação demonstrou que o motor de atualização monetária do ContadJus é capaz de reproduzir diferentes versões do Manual de Cálculos da Justiça Federal mediante simples alteração dos encadeamentos de indexadores, sem necessidade de mudanças na lógica de processamento.
-
-Essa homologação reforça a arquitetura parametrizada implementada na Fase 1.8E, na qual os critérios de atualização são definidos pelos encadeamentos, permanecendo o motor de cálculo independente das regras específicas de cada Manual.
----
-
-## Fase 1.8E – Autenticação, Domínio Próprio e Infraestrutura Inicial da Plataforma ContadJus (02/08/2026)
-
-### Adicionado
-
-- Implementada autenticação de usuários utilizando **Supabase Auth**.
-- Criado sistema de proteção de acesso ao LiquidaCalc por meio de overlay de autenticação.
-- Criado o arquivo:
-  - `js/auth.js`.
-- Criado o arquivo:
-  - `js/supabase.js`.
-- Criado o arquivo:
-  - `css/auth.css`.
-- Implementado suporte a:
-  - login;
-  - logout;
-  - persistência automática de sessão;
-  - recuperação de senha;
-  - monitoramento de autenticação (`onAuthStateChange`).
-- Implementado botão flutuante de logout.
-- Criado namespace global:
-  - `CONTADJUS`.
-- Iniciada a infraestrutura institucional da plataforma ContadJus.
-
-### Alterado
-
-- Atualizado o `index.html` para integração da camada de autenticação.
-- Integrada a biblioteca oficial do Supabase.
-- Implementado carregamento dos módulos:
-  - `js/auth.js`;
-  - `js/supabase.js`;
-  - `css/auth.css`.
-- Padronizada a comunicação utilizando:
-  - `CONTADJUS.supabase`.
-- Traduzidas mensagens técnicas para mensagens amigáveis em português.
-- Mantida total independência do motor de cálculos.
-
-### Corrigido
-
-- Corrigido erro:
-  - `ReferenceError: supabaseClient is not defined`.
-- Corrigida a ordem de carregamento dos scripts.
-- Corrigida a persistência de sessão.
-- Corrigido o fluxo de logout.
-- Corrigida a inicialização do cliente Supabase.
-
-### Infraestrutura
-
-- Registrado o domínio oficial:
-
-  `contadjus.com.br`
-
-- Configurada hospedagem através do GitHub Pages.
-- Configurado domínio personalizado da plataforma.
-- Mantida arquitetura totalmente estática.
-- Mantido processamento integral dos cálculos no navegador do usuário.
-
-### Preservado
-
-- Nenhuma alteração no motor previdenciário.
-- Nenhuma alteração nas regras de negócio.
-- Nenhuma alteração nas Guias 1 a 7.
-- Nenhuma alteração em:
-  - `core.js`;
-  - `app.js`;
-  - `motor-evolucao.js`;
-  - `beneficios-recebidos.js`;
-  - `diferencas.js`;
-  - `json.js`;
-  - `relatorios.js`;
-  - `data/indices.js`.
-
-### Homologação
-
-Testes aprovados:
-
-- Login funcional.
-- Logout funcional.
-- Persistência de sessão funcional.
-- Recuperação de senha funcional.
-- Compatibilidade preservada com GitHub Pages.
-- Compatibilidade preservada com LiquidaCalc.
-- Overlay de autenticação sem interferência no sistema.
-- Domínio personalizado funcionando corretamente.
-
-### Marco Institucional
-
-Esta versão representa a transição formal do projeto LiquidaCalc para a infraestrutura inicial da plataforma ContadJus.
-
-Principais marcos:
-
-- criação da identidade institucional da plataforma;
-- aquisição do domínio próprio;
-- autenticação de usuários;
-- preparação para gerenciamento de contas;
-- preparação para futuros módulos;
-- manutenção da independência do motor de cálculos.
-
-O LiquidaCalc permanece como núcleo de cálculos previdenciários da plataforma ContadJus, agora operando sobre infraestrutura própria de autenticação, domínio e expansão futura.
+- não cumulação entre juros e SELIC;
+- valor e total da SELIC;
+- total geral da condenação;
+- integração completa da atualização aos relatórios;
+- implementação matemática da Guia 6;
+- parâmetros avançados de exibição das tabelas.
 
 ---
 
-## Versão 3.4-alpha – Fase 1.8D – Espelho das Diferenças da Guia 4 na Guia 5 (30/07/2026)
+## Política de compatibilidade
 
-### Adicionado
-- Criada, na **Guia 5 – Atualização**, a seção **Diferenças da Guia 4**.
-- Adicionado o botão **Importar Diferenças da Guia 4**.
-- Criada a variável global:
-  - `window.diferencasAtualizacaoAtual`.
-- Criadas funções auxiliares para a Fase 1.8D:
-  - `formatarMoedaAtualizacao()`;
-  - `renderizarDiferencasAtualizacao()`;
-  - `importarDiferencasGuia4ParaAtualizacao()`;
-  - `limparDiferencasAtualizacao()`.
-- Implementada renderização, na Guia 5, de tabela com:
-  - Competência;
-  - Diferença Original.
-- Implementada importação manual das diferenças apuradas na Guia 4 por meio da função já existente:
-  - `coletarDiferencasParaAtualizacao()`.
-- Exposta globalmente a função:
-  - `window.importarDiferencasGuia4ParaAtualizacao`.
-- Exposta globalmente a função:
-  - `window.limparDiferencasAtualizacao`.
+O projeto preserva, sempre que possível:
 
-### Alterado
-- Reordenada a **Guia 5 – Atualização** para a seguinte sequência:
-  1. Datas de Referência;
-  2. Parâmetros de Correção Monetária;
-  3. Parâmetros de Juros de Mora;
-  4. Diferenças da Guia 4;
-  5. Aviso de módulo em construção.
-- A seção **Diferenças da Guia 4** passou a exibir as competências e diferenças originais importadas da Guia 4.
-- Implementado reset automático das diferenças importadas quando houver alteração de dados nas Guias 1, 3 ou 4.
-- O reset automático limpa apenas as diferenças importadas, preservando:
-  - `window.parametrosCorrecaoAtual`;
-  - `window.parametrosJurosAtual`;
-  - `window.parametrosSelicAtual`;
-  - `statusCorrecao`;
-  - `statusJuros`;
-  - JSONs de parâmetros já carregados na Guia 5.
-- A mensagem de reset passou a informar:
-  - `Diferenças não importadas após alteração dos dados. Reimporte a Guia 4. Parâmetros de correção e juros mantidos.`
-- Ajustado o visual das competências no formato `13º/AAAA`, mantendo apenas o texto da competência em azul/negrito.
-- Adicionada zebra discreta à tabela de diferenças importadas na Guia 5.
-- Mantida a intercalação visual normal das linhas na Guia 4, inclusive nas competências `13º/AAAA`.
-
-### Corrigido
-- Corrigido o comportamento em que diferenças antigas permaneciam visíveis na Guia 5 após alteração dos dados de origem.
-- Corrigida a mensagem exibida ao tentar importar diferenças sem dados calculados na Guia 4.
-- Corrigido destaque visual indevido das linhas de `13º/AAAA`, removendo fundo, bordas e faixa de linha inteira.
-- Corrigido efeito visual em que linhas de `13º/AAAA` ficavam brancas e quebravam a zebra da tabela.
-- Corrigida a tabela da Guia 5 para exibir zebra discreta em branco/cinza claro.
-- Preservado o destaque visual apenas no texto da competência `13º/AAAA`.
-- Preservada a funcionalidade de importação de diferenças após alteração dos dados e novo cálculo.
-
-### Preservado
-- Nenhuma alteração em `data/indexadores.js`.
-- Nenhuma alteração em `data/indices.js`.
-- Nenhuma alteração em `js/diferencas.js`.
-- Nenhuma alteração em `js/app.js`.
-- Nenhuma alteração em `js/json.js`.
-- Nenhuma alteração em `js/motor-evolucao.js`.
-- Nenhuma alteração na lógica de cálculo das diferenças da Guia 4.
-- Nenhuma alteração no motor previdenciário.
-- Nenhuma alteração na estrutura do JSON do caso.
-- Nenhuma implementação de correção monetária.
-- Nenhuma implementação de juros de mora.
-- Nenhuma implementação de SELIC.
-- Nenhuma implementação de taxa legal.
-- Nenhuma implementação de fator acumulado.
-- Nenhuma implementação de valor atualizado final.
-- A função `adminImportarJSON(json)` permanece sem chamada final a `adminAtualizarSelectsIndice()`.
-
-### Homologação
-
-Testes aprovados:
-
-- Sistema abriu sem erro crítico no Console.
-- Guia 5 exibiu a seção **Diferenças da Guia 4**.
-- A ordem da Guia 5 ficou:
-  - Datas de Referência;
-  - Parâmetros de Correção Monetária;
-  - Parâmetros de Juros de Mora;
-  - Diferenças da Guia 4;
-  - Aviso de módulo em construção.
-- Botão **Importar Diferenças da Guia 4** apareceu corretamente.
-- Ao clicar em **Importar Diferenças da Guia 4** sem dados na Guia 4, o sistema exibiu aviso adequado.
-- Após calcular a Guia 4, a Guia 5 importou as competências e diferenças originais.
-- Competências mensais foram importadas corretamente.
-- Competências `13º/AAAA` foram importadas corretamente.
-- O texto da competência `13º/AAAA` ficou azul/negrito, sem destaque de linha inteira.
-- A Guia 4 manteve a zebra visual normal nas linhas mensais e nas linhas de `13º/AAAA`.
-- A Guia 5 passou a exibir zebra discreta na tabela de diferenças importadas.
-- Ao alterar dados nas Guias 1, 3 ou 4, as diferenças importadas na Guia 5 foram limpas automaticamente.
-- O reset automático preservou os parâmetros de correção monetária e juros já carregados.
-- `window.diferencasAtualizacaoAtual` foi limpo e recriado corretamente conforme nova importação.
-- Reimportar as diferenças após alteração dos dados trouxe a nova quantidade correta de competências.
-- Botões **Carregar JSON de Correção** e **Carregar JSON de Juros** continuaram funcionando.
-- Modal administrativo continuou abrindo por `CTRL + SHIFT + E`.
-- Importação e exportação do JSON do caso continuaram funcionando.
-- Guia 4 permaneceu funcional.
-- Motor de evolução previdenciária permaneceu funcional.
-- Nenhum cálculo financeiro foi implementado nesta fase.
-
-### Observação Técnica
-Esta fase criou apenas o espelho das diferenças apuradas na Guia 4 dentro da Guia 5.  
-A Guia 5 ainda não realiza atualização monetária, juros de mora, SELIC, taxa legal, fator acumulado ou cálculo financeiro.
-
-As diferenças importadas em `window.diferencasAtualizacaoAtual` servem como base preparatória para fase futura de atualização monetária.  
-Quando dados de origem são alterados nas Guias 1, 3 ou 4, apenas as diferenças importadas são invalidadas, mantendo preservados os parâmetros de correção monetária e juros já carregados.
-
-A melhoria visual de separadores anuais, linhas de grade discretas, controle de fonte, contraste e modal de preferências de exibição foi registrada para fase futura de UX, sem implementação nesta fase.
-
----
-
-## Versão 3.4-alpha – Fase 1.8C – Integração da Tela Administrativa com a Base de Indexadores (30/07/2026)
-
-### Adicionado
-- Integrada a tela administrativa de parâmetros com `window.INDEXADORES_ATUALIZACAO`.
-- Criadas funções auxiliares para consulta e validação dos indexadores:
-  - `adminObterIndicesDisponiveisPorTipo()`;
-  - `adminIndiceExisteNaBase()`;
-  - `adminIndiceCompativelComTipo()`.
-- Implementado preenchimento dinâmico dos selects de índices a partir de `data/indexadores.js`.
-- Implementada diferenciação entre uso manual e importação de JSON para tratamento de índices incompatíveis.
-- Implementada preservação de índices inexistentes na base durante importação de JSON.
-- Implementada preservação de índices incompatíveis durante importação de JSON, para fins de auditoria.
-- Criado tutorial administrativo:
-  - `TUTORIAL_ADMIN_PARAMETROS.md`.
-
-### Alterado
-- Removida a dependência de listas fixas de índices dentro de `js/admin-encadeamentos.js`.
-- A tela administrativa passou a consultar dinamicamente os índices disponíveis em `window.INDEXADORES_ATUALIZACAO`.
-- O modal administrativo passou a listar índices conforme o tipo do parâmetro:
-  - `correcao_monetaria`;
-  - `juros_mora`;
-  - `selic`, reservado para fase futura;
-  - `taxa_legal`, reservado para fase futura.
-- O texto exibido nos selects passou a mostrar nome amigável e código técnico do índice.
-- O valor gravado nos JSONs de parâmetros permanece sendo o código técnico do índice, como:
-  - `INPC`;
-  - `IPCAE`;
-  - `JUROS_MORA_1_AM`;
-  - `POUPANCA`.
-- Ajustado o comportamento da importação de JSON para preservar códigos técnicos antigos ou inconsistentes, quando necessário.
-- Ajustada a lógica de atualização dos selects ao trocar manualmente o tipo do parâmetro.
-
-### Corrigido
-- Corrigida a exibição de índices incompatíveis no uso manual da tela administrativa.
-- Impedido que índices de correção monetária apareçam em encadeamentos de juros de mora.
-- Impedido que índices de juros de mora apareçam em encadeamentos de correção monetária.
-- Corrigido o comportamento ao mudar manualmente o tipo do parâmetro:
-  - índice incompatível existente na base é substituído por índice compatível.
-- Corrigida a importação de JSON antigo ou inconsistente:
-  - índice inexistente é preservado com aviso;
-  - índice incompatível é preservado com aviso;
-  - exportação posterior mantém o código técnico original.
-- Removida chamada indevida a `adminAtualizarSelectsIndice()` ao final da importação de JSON, evitando substituição silenciosa de índices importados.
-- Corrigido erro de sintaxe em `js/admin-encadeamentos.js` após ajuste manual da função `adminImportarJSON(json)`.
-- Restaurada a abertura do modal administrativo após correção da sintaxe.
-
-### Preservado
-- Nenhuma alteração em `data/indexadores.js`.
-- Nenhuma alteração em `data/indices.js`.
-- Nenhuma alteração em `js/diferencas.js`.
-- Nenhuma alteração em `js/app.js`.
-- Nenhuma alteração em `js/json.js`.
-- Nenhuma alteração em `js/motor-evolucao.js`.
-- Nenhuma alteração em `js/beneficios-recebidos.js`.
-- Nenhuma alteração em `js/relatorios.js`.
-- Nenhuma alteração em `css/styles.css`.
-- Nenhuma alteração na estrutura do JSON do caso.
-- Nenhuma alteração no motor previdenciário.
-- Nenhum cálculo financeiro implementado nesta fase.
-- Guia 5 continua apenas carregando parâmetros, sem realizar atualização monetária, juros, SELIC ou taxa legal.
-
-### Homologação
-
-Testes aprovados:
-
-- Sistema abriu sem erro crítico no Console após correção de sintaxe.
-- `window.INDEXADORES_ATUALIZACAO` permaneceu acessível no Console.
-- Modal administrativo abriu por `CTRL + SHIFT + E`.
-- Correção Monetária listou apenas índices de correção monetária.
-- Juros de Mora listou apenas índices de juros de mora.
-- Índices de juros não apareceram no tipo Correção Monetária.
-- Índices de correção não apareceram no tipo Juros de Mora.
-- JSON de correção carregado no campo de juros foi rejeitado corretamente.
-- JSON de juros carregado no campo de correção foi rejeitado corretamente.
-- JSON com índice inexistente `XYZ` foi carregado com aviso.
-- JSON com índice inexistente `XYZ` foi preservado sem substituição automática.
-- JSON com índice incompatível `INPC` em parâmetro `juros_mora` foi importado com aviso.
-- Índice incompatível importado foi preservado no modal como:
-  `INPC (incompatível com juros_mora)`.
-- Exportação posterior manteve o código técnico original:
-  `"indice": "INPC"`.
-- Guia 5 continuou carregando JSONs de correção monetária e juros de mora.
-- Importação e exportação do JSON do caso continuaram funcionando.
-- Guia 4 permaneceu preservada.
-- Motor de evolução previdenciária permaneceu funcional.
-- Nenhum cálculo financeiro foi implementado nesta fase.
-
-### Observação Técnica
-Esta fase integrou a tela administrativa à base de indexadores criada na Fase 1.8B.  
-A partir desta fase, os selects de índices deixam de depender de listas fixas internas e passam a consultar `window.INDEXADORES_ATUALIZACAO`.
-
-A tela administrativa diferencia dois fluxos:
-
-- No uso manual, índices incompatíveis com o tipo selecionado são substituídos por índices compatíveis.
-- Na importação de JSON, índices inexistentes ou incompatíveis são preservados com aviso, para evitar alteração silenciosa de arquivos antigos ou inconsistentes.
-
-A Guia 5 ainda não realiza cálculo de correção monetária, juros, SELIC ou taxa legal.  
-A próxima etapa recomendada é a Fase 1.8D, destinada a espelhar as diferenças da Guia 4 na Guia 5.
-## Versão 3.4-alpha – Fase 1.8B – Base de Indexadores de Atualização (29/07/2026)
-
-### Adicionado
-- Criado o arquivo `data/indexadores.js`.
-- Criada a base compacta `BASE_INDEXADORES_ATUALIZACAO`.
-- Criado o catálogo de metadados `CATALOGO_INDEXADORES_ATUALIZACAO`.
-- Criada a função `montarIndexadoresAtualizacao()`.
-- Criada a estrutura final `INDEXADORES_ATUALIZACAO`.
-- Exposição global das estruturas:
-  - `window.BASE_INDEXADORES_ATUALIZACAO`;
-  - `window.CATALOGO_INDEXADORES_ATUALIZACAO`;
-  - `window.INDEXADORES_ATUALIZACAO`.
-- Incluídos dados iniciais de indexadores de correção monetária:
-  - INPC;
-  - IPCA-E;
-  - IPCA.
-- Incluídos indexadores vazios para expansão futura:
-  - IGP-DI;
-  - IGP-M;
-  - TR;
-  - IPC-R;
-  - IRSM;
-  - URV;
-  - OTN;
-  - ORTN;
-  - BTN;
-  - Juros de Mora 1% a.m.;
-  - Juros de Mora 0,5% a.m.;
-  - Poupança;
-  - Taxa Legal;
-  - SELIC.
-- Incluída chamada ao script `data/indexadores.js` no `index.html`, logo após `data/indices.js`.
-
-### Alterado
-- A base de indexadores foi estruturada em modelo híbrido:
-  - dados mensais concentrados em base compacta;
-  - metadados separados em catálogo;
-  - estrutura final montada automaticamente.
-- Mantida compatibilidade futura com acesso no formato:
-  `window.INDEXADORES_ATUALIZACAO.INPC.dados`.
-- Preservada a semelhança visual e lógica com a organização da base interna de reajustes previdenciários.
-- Mantida a separação entre:
-  - `data/indices.js`, destinado aos reajustes previdenciários, salário mínimo e teto;
-  - `data/indexadores.js`, destinado à atualização monetária, juros de mora, SELIC e taxa legal.
-
-### Preservado
-- Nenhuma alteração em `data/indices.js`.
-- Nenhuma alteração no motor previdenciário.
-- Nenhuma alteração na Guia 4.
-- Nenhuma alteração no JSON do caso.
-- Nenhuma alteração na tela administrativa da Fase 1.8A.
-- Nenhum cálculo financeiro implementado nesta fase.
-- Guia 5 continua apenas carregando parâmetros, sem realizar atualização monetária, juros, SELIC ou taxa legal.
-
-### Homologação
-
-Testes aprovados:
-
-- Sistema abriu sem erro crítico no Console.
-- `window.BASE_INDEXADORES_ATUALIZACAO` retornou a base compacta.
-- `window.CATALOGO_INDEXADORES_ATUALIZACAO` retornou os metadados.
-- `window.INDEXADORES_ATUALIZACAO` retornou a estrutura final completa.
-- Dados de INPC ficaram acessíveis por:
-  - `window.BASE_INDEXADORES_ATUALIZACAO.INPC`;
-  - `window.INDEXADORES_ATUALIZACAO.INPC.dados`.
-- Dados de IPCA-E ficaram acessíveis pela estrutura global.
-- Dados de IPCA ficaram acessíveis pela estrutura global.
-- Índices vazios foram preservados para expansão futura.
-- `window.INDEXADORES_ATUALIZACAO.SELIC.dados` retornou objeto vazio.
-- Importação e exportação do JSON do caso continuaram funcionando.
-- Guia 5 continuou carregando JSON de correção monetária e JSON de juros.
-- Tela administrativa continuou abrindo por `CTRL + SHIFT + E`.
-- Motor de evolução previdenciária permaneceu funcional.
-- Nenhum cálculo financeiro foi implementado nesta fase.
-
-### Observação Técnica
-Esta fase criou a base estrutural dos indexadores de atualização, ainda sem integração automática com a tela administrativa e sem motor de cálculo.  
-A base foi preparada para permitir que, em fase posterior, os encadeamentos carregados na Guia 5 consultem os índices disponíveis em `INDEXADORES_ATUALIZACAO`.
-
----
-
-## Versão 3.4-alpha – Fase 1.8A – Infraestrutura de Parâmetros de Atualização (29/07/2026)
-
-### Adicionado
-- Criada a infraestrutura inicial da **Guia 5 – Atualização**.
-- Criada tela administrativa oculta para gerenciamento de parâmetros de atualização.
-- Implementado acesso à tela administrativa por atalho:
-  `CTRL + SHIFT + E`.
-- Implementado módulo `js/admin-encadeamentos.js`.
-- Implementada criação de JSONs independentes de parâmetros de atualização.
-- Implementado suporte à criação de parâmetros de:
-  - Correção monetária;
-  - Juros de mora.
-- Implementada seleção do tipo de parâmetro na tela administrativa:
-  - `correcao_monetaria`;
-  - `juros_mora`;
-  - `selic` reservado para fase futura;
-  - `taxa_legal` reservado para fase futura.
-- Implementada tela administrativa com:
-  - Nome do encadeamento;
-  - Descrição;
-  - Tipo do parâmetro;
-  - Tabela de períodos;
-  - Índice;
-  - Data inicial;
-  - Data final;
-  - Adição e remoção de linhas;
-  - Validação do encadeamento;
-  - Exportação de JSON;
-  - Importação de JSON.
-- Implementado carregamento de JSON de correção monetária na Guia 5.
-- Implementado carregamento de JSON de juros de mora na Guia 5.
-- Implementada exibição, na Guia 5, dos dados do parâmetro carregado:
-  - Nome;
-  - Descrição;
-  - Índices utilizados;
-  - Quantidade de períodos.
-- Criadas variáveis globais para uso futuro:
-  - `window.parametrosCorrecaoAtual`;
-  - `window.parametrosJurosAtual`;
-  - `window.parametrosSelicAtual`.
-- Criada função preparatória `coletarDiferencasParaAtualizacao()`, destinada à futura integração da Guia 5 com a Guia 4.
-- Implementada sincronização inicial entre os campos da Guia 1 e da Guia 5:
-  - Data de Atualização;
-  - Início dos Juros.
-
-### Alterado
-- Reestruturada a apresentação inicial da **Guia 5 – Atualização**.
-- Substituídos os antigos campos visuais de critério de correção e critério de juros por botões de carregamento de JSON:
-  - **Carregar JSON de Correção**;
-  - **Carregar JSON de Juros**.
-- Mantidos os campos `criterioCorrecao` e `criterioJuros` como campos ocultos para preservar compatibilidade com a exportação/importação do JSON do caso.
-- Ajustado o layout da Guia 5 para separar:
-  - Datas de referência;
-  - Parâmetros de correção monetária;
-  - Parâmetros de juros de mora;
-  - Aviso de módulo em construção.
-- Padronizada a largura dos botões de carregamento de JSON na Guia 5.
-- Adicionado estilo para exibição dos status de parâmetros carregados:
-  - `#statusCorrecao`;
-  - `#statusJuros`.
-
-### Corrigido
-- Corrigida incompatibilidade causada pela remoção dos antigos campos `criterioCorrecao` e `criterioJuros`, que eram utilizados por `js/json.js`.
-- Eliminado erro na importação de JSON do caso:
-  `Cannot set properties of null (setting 'value')`.
-- Restaurado o funcionamento do botão **Exportar Dados do Caso** após inclusão dos campos ocultos de compatibilidade.
-- Corrigido o carregamento dos botões da Guia 5:
-  - `btnCarregarCorrecao`;
-  - `btnCarregarJuros`.
-- Corrigida a abertura da tela administrativa via `CTRL + SHIFT + E`.
-- Corrigida a criação dinâmica do modal administrativo.
-- Corrigido conflito potencial com função existente na Guia 4, evitando recriação global de `converterCompetenciaParaNumero`.
-- Criada função própria `adminCompetenciaParaNumero()` para uso exclusivo da administração de encadeamentos.
-- Corrigido o parse de valores brasileiros na função preparatória `coletarDiferencasParaAtualizacao()`.
-- Corrigida a validação de períodos para impedir sobreposição.
-- Corrigida a validação de períodos abertos, permitindo no máximo um período sem data final.
-- Corrigida a coleta de linhas da tabela administrativa para não ignorar linhas incompletas.
-- Evitada duplicação de eventos ao abrir e fechar o modal administrativo repetidas vezes.
-
-### Homologação
-
-Testes aprovados:
-
-- Importação de JSON do caso sem erro.
-- Exportação de JSON do caso funcionando.
-- Guia 5 aberta corretamente.
-- Botão **Carregar JSON de Correção** funcionando.
-- Botão **Carregar JSON de Juros** funcionando.
-- Tela administrativa aberta por `CTRL + SHIFT + E`.
-- Criação de encadeamento de correção monetária pela tela administrativa.
-- Validação de sobreposição entre períodos.
-- Rejeição de período sobreposto:
-  - Exemplo: `IPCAE 01/2000 a 12/2025` com `INPC 01/2025 aberto`.
-- Validação positiva de períodos encadeados:
-  - Exemplo: `IPCAE 01/2000 a 12/2025` e `INPC 01/2026 aberto`.
-- Exportação de JSON de correção monetária.
-- Carregamento de JSON de correção monetária na Guia 5.
-- Exibição correta do parâmetro de correção carregado:
-  - Nome;
-  - Descrição;
-  - Índices;
-  - Quantidade de períodos.
-- Rejeição de JSON de juros quando carregado no campo de correção.
-- Rejeição de JSON de correção quando carregado no campo de juros.
-- Exportação de JSON de juros de mora.
-- Carregamento de JSON de juros de mora na Guia 5.
-- Preservação da Guia 4.
-- Preservação do motor de evolução previdenciária.
-- Nenhum cálculo financeiro implementado nesta fase.
-
-### Observação Técnica
-Esta fase implementa apenas a infraestrutura de parâmetros da atualização monetária e dos juros de mora.  
-A Guia 5 ainda não realiza cálculo de correção monetária, juros, SELIC ou taxa legal.  
-O cálculo financeiro será implementado em fase posterior, a partir dos parâmetros carregados e das diferenças apuradas na Guia 4.
-
----
-
-## Versão 3.3 – Fase 1.7D2 (28/07/2026)
-
-### Adicionado
-- Implementado cálculo do Abono Anual (13º) na Guia 4.
-- Inclusão automática de competências no formato `13º/AAAA`.
-- Implementada função de cálculo de avos com regra dos 15 dias.
-- Implementado suporte ao primeiro 13º de benefícios previdenciários comuns.
-- Implementado suporte ao cálculo de 13º para benefícios baseados em salário mínimo.
-- Adicionada opção **"Incluir 13º proporcional no ano final aberto"** na Guia 1.
-- Implementada persistência da opção em exportação/importação JSON.
-- Implementado cálculo individualizado do 13º para benefício devido e benefícios recebidos.
-
-### Alterado
-- Guia 4 passou a calcular o 13º utilizando a mesma base exibida nas competências da tabela (`obterValorIntegral()`).
-- Reestruturada a lógica de geração da linha `13º/AAAA` para o ano final.
-- Ajustada a memória da Guia 3 para exibir apenas a evolução mensal do benefício recebido.
-- Re-renderização da memória da Guia 3 após recálculo.
-- Ajustado o destaque visual das linhas de 13º para um modelo mais discreto e uniforme entre Chrome e Edge.
-- Removido destaque visual excessivo (fundo azul e bordas fortes) da linha de 13º.
-- Mantido apenas o texto da competência em azul/negrito.
-
-### Corrigido
-- Corrigido o cálculo do primeiro 13º quando a memória do benefício possuía apenas competências de reajuste.
-- Corrigida a obtenção da base de cálculo do 13º para memórias resumidas.
-- Corrigido o comportamento do ano final aberto.
-- Corrigido o cálculo proporcional do 13º do benefício devido até a Data Final.
-- Corrigido o cálculo do 13º dos benefícios recebidos com DCB dentro do período.
-- Corrigida a limitação do 13º dos recebidos quando a DCB ocorre após a Data Final.
-- Impedido que a DIP do benefício devido seja interpretada como DCB.
-- Corrigida a restauração de competências de 13º na Central de Alterações Manuais.
-- Corrigida a funcionalidade "Restaurar Todas".
-- Corrigida recursão infinita em `relatorios.js`.
-- Eliminado erro:
-  `Maximum call stack size exceeded`.
-- Restaurada a exibição da Central de Competências Modificadas após edição manual.
-- Corrigida compatibilidade da importação JSON após inclusão do módulo de 13º.
-
-### Homologação
-Testes aprovados:
-
-- Ano final aberto sem DCB e opção desmarcada.
-- Ano final aberto com opção marcada.
-- Benefício recebido com DCB dentro do período.
-- Benefício recebido com DCB posterior à Data Final.
-- Ano final completo em dezembro.
-- DIP do devido sem efeito de DCB.
-- Edição e restauração de competências.
-- Importação e exportação JSON.
-- Compatibilidade visual entre Chrome e Edge.
+- casos nas versões 3.1, 3.2 e 3.3;
+- encadeamentos administrativos antigos em `.json`;
+- justificativas antigas armazenadas como texto;
+- campos novos com valores padrão em casos antigos;
+- separação entre parâmetros de Correção, Juros e SELIC;
+- cálculos já homologados durante a evolução das fases.
